@@ -27,7 +27,7 @@ semantic_description: >-
   The right panel shows representative executive summary, KPI summary, and detail
   table slides. A bottom lineage strip links the synthetic input, JSON specification,
   controls, and PowerPoint output. The visual does not claim Gantt generation,
-  automated visual repair, Mail distribution, unattended approval, or public release
+  automated visual repair, MailMCP distribution, unattended approval, or public release
   of the workflow runtime package.
 
 claims:
