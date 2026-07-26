@@ -1,0 +1,50 @@
+schema_version: 1
+visual_id: mcp-office.excel-to-powerpoint-governed-workflow
+content_id: post:excel-to-powerpoint-governed-workflow
+source_class: project_owned
+project: mcp-office
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/excel-to-powerpoint-governed-workflow/cover.svg
+
+role: explanatory_cover
+section_anchor: null
+sequence: 0
+step_key: excel-to-powerpoint-governed-workflow
+
+alt: >-
+  Three-stage governed workflow showing a synthetic finance and procurement table,
+  a deterministic deck specification with path and write controls, and an executive
+  presentation containing summary and detail slides.
+caption: >-
+  Structured data becomes a bounded presentation specification before Excel and
+  PowerPoint tools create a reviewable executive deck with artifact lineage.
+semantic_description: >-
+  The visual reads from left to right. A synthetic performance table provides
+  explicit tabular input. The middle panel normalizes that input into a deterministic
+  deck specification, then shows four bounded stages: ingest structured input,
+  normalize to deck_spec, generate title/summary/detail slides, and record artifact
+  lineage. Path controls, write confirmation, and an evidence record are explicit.
+  The right panel shows representative executive summary, KPI summary, and detail
+  table slides. A bottom lineage strip links the synthetic input, JSON specification,
+  controls, and PowerPoint output. The visual does not claim Gantt generation,
+  automated visual repair, MailMCP distribution, unattended approval, or public release
+  of the workflow runtime package.
+
+claims:
+  - Structured tabular input can be normalized into a deterministic presentation specification.
+  - The delivered proof generates summary and table-oriented PowerPoint slides from that specification.
+  - Approved-path controls, write confirmation, and artifact lineage are part of the governed workflow.
+boundaries:
+  - The table and slide contents are synthetic and do not represent employer, client, supplier, or production data.
+  - The visual does not claim Gantt or timeline generation.
+  - The visual does not claim an automated render-and-repair loop.
+  - The visual does not claim MailMCP distribution or public release of WorkflowRuntime.
+  - Human review and publication approval remain separate gates.
+
+creation_method: original_svg_recreated_from_owner_approved_concept
+contributor: OpenAI ChatGPT with Delyan Dosev direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: true
+external_resources: false
+scripts: false
