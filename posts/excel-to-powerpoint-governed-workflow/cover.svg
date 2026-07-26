@@ -69,131 +69,50 @@
   <g aria-label="Synthetic spreadsheet input">
     <rect x="55" y="225" width="470" height="510" rx="18" fill="#ffffff" stroke="#65a97c" stroke-width="2"/>
     <path d="M55 243 Q55 225 73 225 H507 Q525 225 525 243 V270 H55 Z" fill="#1f8b4c"/>
-    <circle cx="78" cy="247" r="5" fill="#d8f0df"/>
-    <circle cx="97" cy="247" r="5" fill="#d8f0df"/>
-    <circle cx="116" cy="247" r="5" fill="#d8f0df"/>
+    <circle cx="78" cy="247" r="5" fill="#d8f0df"/><circle cx="97" cy="247" r="5" fill="#d8f0df"/><circle cx="116" cy="247" r="5" fill="#d8f0df"/>
     <text x="78" y="300" class="cardTitle green">SYNTHETIC PERFORMANCE TABLE</text>
     <rect x="78" y="320" width="424" height="212" rx="10" fill="#fbfdff" stroke="#c8d8e8"/>
     <rect x="78" y="320" width="424" height="38" rx="10" fill="#e8f5ed"/>
-    <text x="92" y="344" class="label">Category</text>
-    <text x="244" y="344" class="label">Current</text>
-    <text x="327" y="344" class="label">Target</text>
-    <text x="408" y="344" class="label">Status</text>
-    <g stroke="#dbe6f0" stroke-width="1">
-      <path d="M78 358 H502 M78 397 H502 M78 436 H502 M78 475 H502"/>
-      <path d="M225 320 V532 M310 320 V532 M390 320 V532"/>
-    </g>
-    <text x="92" y="383" class="small">Professional services</text>
-    <text x="250" y="383" class="small">92</text>
-    <text x="337" y="383" class="small">90</text>
-    <rect x="416" y="369" width="64" height="22" rx="11" fill="#e8f5ed"/>
-    <text x="448" y="384" text-anchor="middle" class="tiny green">On track</text>
-    <text x="92" y="422" class="small">Software</text>
-    <text x="250" y="422" class="small">84</text>
-    <text x="337" y="422" class="small">90</text>
-    <rect x="416" y="408" width="64" height="22" rx="11" fill="#fff0e6"/>
-    <text x="448" y="423" text-anchor="middle" class="tiny orange">Review</text>
-    <text x="92" y="461" class="small">Cloud services</text>
-    <text x="250" y="461" class="small">88</text>
-    <text x="337" y="461" class="small">85</text>
-    <rect x="416" y="447" width="64" height="22" rx="11" fill="#e8f5ed"/>
-    <text x="448" y="462" text-anchor="middle" class="tiny green">On track</text>
-    <text x="92" y="500" class="small">Travel</text>
-    <text x="250" y="500" class="small">76</text>
-    <text x="337" y="500" class="small">85</text>
-    <rect x="416" y="486" width="64" height="22" rx="11" fill="#fff0e6"/>
-    <text x="448" y="501" text-anchor="middle" class="tiny orange">Review</text>
-    <rect x="78" y="555" width="195" height="145" rx="12" fill="#f8fbff" stroke="#c8d8e8"/>
-    <text x="94" y="580" class="label">Category mix</text>
-    <circle cx="154" cy="632" r="43" fill="none" stroke="#d7e2ed" stroke-width="17"/>
-    <path d="M154 589 A43 43 0 0 1 194 648" fill="none" stroke="#1f8b4c" stroke-width="17"/>
-    <path d="M194 648 A43 43 0 0 1 132 669" fill="none" stroke="#2667c9" stroke-width="17"/>
-    <path d="M132 669 A43 43 0 0 1 154 589" fill="none" stroke="#e66a19" stroke-width="17"/>
-    <text x="154" y="636" text-anchor="middle" class="label">100%</text>
-    <circle cx="219" cy="612" r="5" fill="#1f8b4c"/><text x="231" y="616" class="tiny">Core</text>
-    <circle cx="219" cy="636" r="5" fill="#2667c9"/><text x="231" y="640" class="tiny">Growth</text>
-    <circle cx="219" cy="660" r="5" fill="#e66a19"/><text x="231" y="664" class="tiny">Review</text>
-    <rect x="290" y="555" width="212" height="145" rx="12" fill="#f8fbff" stroke="#c8d8e8"/>
-    <text x="306" y="580" class="label">Current vs target</text>
-    <line x1="316" y1="673" x2="478" y2="673" stroke="#b9cbe0"/>
-    <rect x="328" y="618" width="18" height="55" fill="#1f8b4c"/>
-    <rect x="350" y="605" width="18" height="68" fill="#c9d8e8"/>
-    <rect x="386" y="634" width="18" height="39" fill="#1f8b4c"/>
-    <rect x="408" y="604" width="18" height="69" fill="#c9d8e8"/>
-    <rect x="444" y="623" width="18" height="50" fill="#1f8b4c"/>
-    <rect x="466" y="611" width="18" height="62" fill="#c9d8e8"/>
-    <text x="348" y="692" text-anchor="middle" class="tiny">A</text>
-    <text x="406" y="692" text-anchor="middle" class="tiny">B</text>
-    <text x="464" y="692" text-anchor="middle" class="tiny">C</text>
+    <text x="92" y="344" class="label">Category</text><text x="244" y="344" class="label">Current</text><text x="327" y="344" class="label">Target</text><text x="408" y="344" class="label">Status</text>
+    <g stroke="#dbe6f0" stroke-width="1"><path d="M78 358 H502 M78 397 H502 M78 436 H502 M78 475 H502"/><path d="M225 320 V532 M310 320 V532 M390 320 V532"/></g>
+    <text x="92" y="383" class="small">Professional services</text><text x="250" y="383" class="small">92</text><text x="337" y="383" class="small">90</text><rect x="416" y="369" width="64" height="22" rx="11" fill="#e8f5ed"/><text x="448" y="384" text-anchor="middle" class="tiny green">On track</text>
+    <text x="92" y="422" class="small">Software</text><text x="250" y="422" class="small">84</text><text x="337" y="422" class="small">90</text><rect x="416" y="408" width="64" height="22" rx="11" fill="#fff0e6"/><text x="448" y="423" text-anchor="middle" class="tiny orange">Review</text>
+    <text x="92" y="461" class="small">Cloud services</text><text x="250" y="461" class="small">88</text><text x="337" y="461" class="small">85</text><rect x="416" y="447" width="64" height="22" rx="11" fill="#e8f5ed"/><text x="448" y="462" text-anchor="middle" class="tiny green">On track</text>
+    <text x="92" y="500" class="small">Travel</text><text x="250" y="500" class="small">76</text><text x="337" y="500" class="small">85</text><rect x="416" y="486" width="64" height="22" rx="11" fill="#fff0e6"/><text x="448" y="501" text-anchor="middle" class="tiny orange">Review</text>
+    <rect x="78" y="555" width="195" height="145" rx="12" fill="#f8fbff" stroke="#c8d8e8"/><text x="94" y="580" class="label">Category mix</text>
+    <circle cx="154" cy="632" r="43" fill="none" stroke="#d7e2ed" stroke-width="17"/><path d="M154 589 A43 43 0 0 1 194 648" fill="none" stroke="#1f8b4c" stroke-width="17"/><path d="M194 648 A43 43 0 0 1 132 669" fill="none" stroke="#2667c9" stroke-width="17"/><path d="M132 669 A43 43 0 0 1 154 589" fill="none" stroke="#e66a19" stroke-width="17"/><text x="154" y="636" text-anchor="middle" class="label">100%</text>
+    <circle cx="219" cy="612" r="5" fill="#1f8b4c"/><text x="231" y="616" class="tiny">Core</text><circle cx="219" cy="636" r="5" fill="#2667c9"/><text x="231" y="640" class="tiny">Growth</text><circle cx="219" cy="660" r="5" fill="#e66a19"/><text x="231" y="664" class="tiny">Review</text>
+    <rect x="290" y="555" width="212" height="145" rx="12" fill="#f8fbff" stroke="#c8d8e8"/><text x="306" y="580" class="label">Current vs target</text><line x1="316" y1="673" x2="478" y2="673" stroke="#b9cbe0"/>
+    <rect x="328" y="618" width="18" height="55" fill="#1f8b4c"/><rect x="350" y="605" width="18" height="68" fill="#c9d8e8"/><rect x="386" y="634" width="18" height="39" fill="#1f8b4c"/><rect x="408" y="604" width="18" height="69" fill="#c9d8e8"/><rect x="444" y="623" width="18" height="50" fill="#1f8b4c"/><rect x="466" y="611" width="18" height="62" fill="#c9d8e8"/><text x="348" y="692" text-anchor="middle" class="tiny">A</text><text x="406" y="692" text-anchor="middle" class="tiny">B</text><text x="464" y="692" text-anchor="middle" class="tiny">C</text>
   </g>
-  <line x1="535" y1="475" x2="568" y2="475" stroke="#1f8b4c" stroke-width="6" marker-end="url(#arrowGreen)"/>
-  <line x1="1025" y1="475" x2="1083" y2="475" stroke="#2667c9" stroke-width="6" marker-end="url(#arrowBlue)"/>
+  <line x1="535" y1="475" x2="568" y2="475" stroke="#1f8b4c" stroke-width="6" marker-end="url(#arrowGreen)"/><line x1="1025" y1="475" x2="1083" y2="475" stroke="#2667c9" stroke-width="6" marker-end="url(#arrowBlue)"/>
   <g aria-label="Deterministic workflow specification">
     <rect x="575" y="225" width="450" height="510" rx="18" fill="#ffffff" stroke="#7ca7df" stroke-width="2"/>
     <text x="800" y="262" text-anchor="middle" class="cardTitle blue">DECK SPECIFICATION</text>
     <rect x="605" y="282" width="390" height="130" rx="12" fill="#f4f8fe" stroke="#b7cdea"/>
-    <text x="628" y="312" class="small blue">input</text><text x="710" y="312" class="small">synthetic-report.xlsx</text>
-    <text x="628" y="340" class="small blue">slides</text><text x="710" y="340" class="small">title, summary, detail</text>
-    <text x="628" y="368" class="small blue">controls</text><text x="710" y="368" class="small">approved paths, write confirmation</text>
-    <text x="628" y="396" class="small blue">output</text><text x="710" y="396" class="small">executive-summary.pptx</text>
-    <circle cx="953" cy="326" r="26" fill="#eaf2ff" stroke="#2667c9" stroke-width="2"/>
-    <text x="953" y="333" text-anchor="middle" style="font-family:monospace;font-size:20px;font-weight:700;fill:#2667c9">{ }</text>
-    <g>
-      <line x1="650" y1="445" x2="650" y2="650" stroke="#9ab9df" stroke-width="3"/>
-      <circle cx="650" cy="468" r="7" fill="#2667c9"/><circle cx="650" cy="532" r="7" fill="#2667c9"/><circle cx="650" cy="596" r="7" fill="#2667c9"/><circle cx="650" cy="650" r="7" fill="#2667c9"/>
-      <rect x="676" y="438" width="286" height="58" rx="12" fill="#f8fbff" stroke="#c8d8e8"/>
-      <circle cx="708" cy="467" r="17" fill="#eaf2ff"/><path d="M699 467 H717 M708 458 V476" stroke="#2667c9" stroke-width="2"/>
-      <text x="738" y="462" class="label">Ingest structured input</text><text x="738" y="481" class="tiny">Table shape and fields remain explicit</text>
-      <circle cx="935" cy="467" r="14" fill="#e8f5ed"/><path d="M928 467 L933 472 L942 461" fill="none" stroke="#1f8b4c" stroke-width="2.5"/>
-      <rect x="676" y="502" width="286" height="58" rx="12" fill="#f8fbff" stroke="#c8d8e8"/>
-      <circle cx="708" cy="531" r="17" fill="#eaf2ff"/><path d="M699 531 H717 M708 522 V540" stroke="#2667c9" stroke-width="2"/>
-      <text x="738" y="526" class="label">Normalize to deck_spec</text><text x="738" y="545" class="tiny">Content is bounded before slide writes</text>
-      <circle cx="935" cy="531" r="14" fill="#e8f5ed"/><path d="M928 531 L933 536 L942 525" fill="none" stroke="#1f8b4c" stroke-width="2.5"/>
-      <rect x="676" y="566" width="286" height="58" rx="12" fill="#f8fbff" stroke="#c8d8e8"/>
-      <circle cx="708" cy="595" r="17" fill="#eaf2ff"/><rect x="699" y="587" width="18" height="15" rx="2" fill="none" stroke="#2667c9" stroke-width="2"/>
-      <text x="738" y="590" class="label">Generate summary slides</text><text x="738" y="609" class="tiny">Title, KPI summary and detail table</text>
-      <circle cx="935" cy="595" r="14" fill="#e8f5ed"/><path d="M928 595 L933 600 L942 589" fill="none" stroke="#1f8b4c" stroke-width="2.5"/>
-      <rect x="676" y="630" width="286" height="58" rx="12" fill="#f8fbff" stroke="#c8d8e8"/>
-      <circle cx="708" cy="659" r="17" fill="#eaf2ff"/><path d="M700 661 H716 V651 H700 Z" fill="none" stroke="#2667c9" stroke-width="2"/>
-      <text x="738" y="654" class="label">Record artifact lineage</text><text x="738" y="673" class="tiny">Input, spec, output and validation linked</text>
-      <circle cx="935" cy="659" r="14" fill="#e8f5ed"/><path d="M928 659 L933 664 L942 653" fill="none" stroke="#1f8b4c" stroke-width="2.5"/>
+    <text x="628" y="312" class="small blue">input</text><text x="710" y="312" class="small">synthetic-report.xlsx</text><text x="628" y="340" class="small blue">slides</text><text x="710" y="340" class="small">title, summary, detail</text><text x="628" y="368" class="small blue">controls</text><text x="710" y="368" class="small">approved paths, write confirmation</text><text x="628" y="396" class="small blue">output</text><text x="710" y="396" class="small">executive-summary.pptx</text>
+    <circle cx="953" cy="326" r="26" fill="#eaf2ff" stroke="#2667c9" stroke-width="2"/><text x="953" y="333" text-anchor="middle" style="font-family:monospace;font-size:20px;font-weight:700;fill:#2667c9">{ }</text>
+    <g><line x1="650" y1="445" x2="650" y2="650" stroke="#9ab9df" stroke-width="3"/><circle cx="650" cy="468" r="7" fill="#2667c9"/><circle cx="650" cy="532" r="7" fill="#2667c9"/><circle cx="650" cy="596" r="7" fill="#2667c9"/><circle cx="650" cy="650" r="7" fill="#2667c9"/>
+      <rect x="676" y="438" width="286" height="58" rx="12" fill="#f8fbff" stroke="#c8d8e8"/><circle cx="708" cy="467" r="17" fill="#eaf2ff"/><path d="M699 467 H717 M708 458 V476" stroke="#2667c9" stroke-width="2"/><text x="738" y="462" class="label">Ingest structured input</text><text x="738" y="481" class="tiny">Explicit table shape and fields</text><circle cx="935" cy="467" r="14" fill="#e8f5ed"/><path d="M928 467 L933 472 L942 461" fill="none" stroke="#1f8b4c" stroke-width="2.5"/>
+      <rect x="676" y="502" width="286" height="58" rx="12" fill="#f8fbff" stroke="#c8d8e8"/><circle cx="708" cy="531" r="17" fill="#eaf2ff"/><path d="M699 531 H717 M708 522 V540" stroke="#2667c9" stroke-width="2"/><text x="738" y="526" class="label">Normalize to deck_spec</text><text x="738" y="545" class="tiny">Bounded before slide writes</text><circle cx="935" cy="531" r="14" fill="#e8f5ed"/><path d="M928 531 L933 536 L942 525" fill="none" stroke="#1f8b4c" stroke-width="2.5"/>
+      <rect x="676" y="566" width="286" height="58" rx="12" fill="#f8fbff" stroke="#c8d8e8"/><circle cx="708" cy="595" r="17" fill="#eaf2ff"/><rect x="699" y="587" width="18" height="15" rx="2" fill="none" stroke="#2667c9" stroke-width="2"/><text x="738" y="590" class="label">Generate summary slides</text><text x="738" y="609" class="tiny">Title, KPI and detail table</text><circle cx="935" cy="595" r="14" fill="#e8f5ed"/><path d="M928 595 L933 600 L942 589" fill="none" stroke="#1f8b4c" stroke-width="2.5"/>
+      <rect x="676" y="630" width="286" height="58" rx="12" fill="#f8fbff" stroke="#c8d8e8"/><circle cx="708" cy="659" r="17" fill="#eaf2ff"/><path d="M700 661 H716 V651 H700 Z" fill="none" stroke="#2667c9" stroke-width="2"/><text x="738" y="654" class="label">Record artifact lineage</text><text x="738" y="673" class="tiny">Input, spec and output linked</text><circle cx="935" cy="659" r="14" fill="#e8f5ed"/><path d="M928 659 L933 664 L942 653" fill="none" stroke="#1f8b4c" stroke-width="2.5"/>
     </g>
-    <rect x="605" y="699" width="390" height="24" rx="12" fill="#eaf2ff"/>
-    <text x="800" y="716" text-anchor="middle" class="tiny blue">Path control • Write confirmation • Evidence record</text>
+    <rect x="605" y="699" width="390" height="24" rx="12" fill="#eaf2ff"/><text x="800" y="716" text-anchor="middle" class="tiny blue">Path control • Write confirmation • Evidence record</text>
   </g>
   <g aria-label="Executive presentation output">
     <rect x="1090" y="225" width="455" height="510" rx="18" fill="#ffffff" stroke="#e5a171" stroke-width="2"/>
-    <rect x="1120" y="260" width="395" height="150" rx="13" fill="url(#navySlide)"/>
-    <path d="M1445 260 H1515 V410 H1390 Z" fill="#e66a19" opacity="0.9"/>
-    <text x="1150" y="306" style="font-family:Inter,Arial,sans-serif;font-size:16px;font-weight:600;fill:#ff9b4c">EXECUTIVE SUMMARY</text>
-    <text x="1150" y="344" style="font-family:Inter,Arial,sans-serif;font-size:28px;font-weight:700;fill:#ffffff">Supplier Performance</text>
-    <text x="1150" y="376" style="font-family:Inter,Arial,sans-serif;font-size:16px;font-weight:500;fill:#d9e4f2">Synthetic public proof</text>
-    <rect x="1120" y="430" width="395" height="122" rx="13" fill="#f8fbff" stroke="#d5e0ec"/>
-    <text x="1140" y="458" class="cardTitle">KPI Summary</text>
-    <g>
-      <rect x="1140" y="474" width="104" height="58" rx="9" fill="#ffffff" stroke="#d5e0ec"/><text x="1192" y="495" text-anchor="middle" class="tiny">On track</text><text x="1192" y="520" text-anchor="middle" style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:700;fill:#1f8b4c">2</text>
-      <rect x="1256" y="474" width="104" height="58" rx="9" fill="#ffffff" stroke="#d5e0ec"/><text x="1308" y="495" text-anchor="middle" class="tiny">Review</text><text x="1308" y="520" text-anchor="middle" style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:700;fill:#e66a19">2</text>
-      <rect x="1372" y="474" width="123" height="58" rx="9" fill="#ffffff" stroke="#d5e0ec"/><text x="1433" y="495" text-anchor="middle" class="tiny">Source rows</text><text x="1433" y="520" text-anchor="middle" style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:700;fill:#2667c9">4</text>
-    </g>
-    <rect x="1120" y="572" width="395" height="132" rx="13" fill="#f8fbff" stroke="#d5e0ec"/>
-    <text x="1140" y="600" class="cardTitle">Category Detail</text>
-    <rect x="1140" y="616" width="355" height="25" rx="5" fill="#fff0e6"/>
-    <text x="1151" y="633" class="tiny navy">Category</text><text x="1290" y="633" class="tiny navy">Current</text><text x="1360" y="633" class="tiny navy">Target</text><text x="1432" y="633" class="tiny navy">Status</text>
-    <g class="tiny"><text x="1151" y="659">Professional services</text><text x="1302" y="659">92</text><text x="1372" y="659">90</text><text x="1434" y="659" class="green">On track</text><text x="1151" y="684">Software</text><text x="1302" y="684">84</text><text x="1372" y="684">90</text><text x="1434" y="684" class="orange">Review</text></g>
+    <rect x="1120" y="260" width="395" height="150" rx="13" fill="url(#navySlide)"/><path d="M1445 260 H1515 V410 H1390 Z" fill="#e66a19" opacity="0.9"/>
+    <text x="1150" y="306" style="font-family:Inter,Arial,sans-serif;font-size:16px;font-weight:600;fill:#ff9b4c">EXECUTIVE SUMMARY</text><text x="1150" y="344" style="font-family:Inter,Arial,sans-serif;font-size:28px;font-weight:700;fill:#ffffff">Supplier Performance</text><text x="1150" y="376" style="font-family:Inter,Arial,sans-serif;font-size:16px;font-weight:500;fill:#d9e4f2">Synthetic public proof</text>
+    <rect x="1120" y="430" width="395" height="122" rx="13" fill="#f8fbff" stroke="#d5e0ec"/><text x="1140" y="458" class="cardTitle">KPI Summary</text>
+    <g><rect x="1140" y="474" width="104" height="58" rx="9" fill="#ffffff" stroke="#d5e0ec"/><text x="1192" y="495" text-anchor="middle" class="tiny">On track</text><text x="1192" y="520" text-anchor="middle" style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:700;fill:#1f8b4c">2</text><rect x="1256" y="474" width="104" height="58" rx="9" fill="#ffffff" stroke="#d5e0ec"/><text x="1308" y="495" text-anchor="middle" class="tiny">Review</text><text x="1308" y="520" text-anchor="middle" style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:700;fill:#e66a19">2</text><rect x="1372" y="474" width="123" height="58" rx="9" fill="#ffffff" stroke="#d5e0ec"/><text x="1433" y="495" text-anchor="middle" class="tiny">Source rows</text><text x="1433" y="520" text-anchor="middle" style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:700;fill:#2667c9">4</text></g>
+    <rect x="1120" y="572" width="395" height="132" rx="13" fill="#f8fbff" stroke="#d5e0ec"/><text x="1140" y="600" class="cardTitle">Category Detail</text><rect x="1140" y="616" width="355" height="25" rx="5" fill="#fff0e6"/><text x="1151" y="633" class="tiny navy">Category</text><text x="1290" y="633" class="tiny navy">Current</text><text x="1360" y="633" class="tiny navy">Target</text><text x="1432" y="633" class="tiny navy">Status</text><g class="tiny"><text x="1151" y="659">Professional services</text><text x="1302" y="659">92</text><text x="1372" y="659">90</text><text x="1434" y="659" class="green">On track</text><text x="1151" y="684">Software</text><text x="1302" y="684">84</text><text x="1372" y="684">90</text><text x="1434" y="684" class="orange">Review</text></g>
   </g>
   <g aria-label="Artifact lineage">
-    <rect x="165" y="780" width="1270" height="78" rx="39" fill="#ffffff" stroke="#bdd0e4" stroke-width="2"/>
-    <line x1="280" y1="819" x2="1320" y2="819" stroke="#7da4d1" stroke-width="2" stroke-dasharray="7 7"/>
-    <circle cx="250" cy="819" r="29" fill="#e8f5ed" stroke="#1f8b4c" stroke-width="2"/>
-    <path d="M238 807 H260 V831 H238 Z M242 813 H256 M242 819 H256 M242 825 H256" fill="none" stroke="#1f8b4c" stroke-width="2"/>
-    <text x="250" y="770" text-anchor="middle" class="label green">INPUT</text><text x="250" y="852" text-anchor="middle" class="tiny">synthetic-report.xlsx</text>
-    <circle cx="600" cy="819" r="29" fill="#eaf2ff" stroke="#2667c9" stroke-width="2"/>
-    <text x="600" y="827" text-anchor="middle" style="font-family:monospace;font-size:19px;font-weight:700;fill:#2667c9">{ }</text><text x="600" y="770" text-anchor="middle" class="label blue">SPEC</text><text x="600" y="852" text-anchor="middle" class="tiny">deck_spec.json</text>
-    <circle cx="950" cy="819" r="29" fill="#eaf2ff" stroke="#2667c9" stroke-width="2"/>
-    <path d="M938 819 L946 827 L963 809" fill="none" stroke="#2667c9" stroke-width="3" stroke-linecap="round"/>
-    <text x="950" y="770" text-anchor="middle" class="label blue">CONTROLS</text><text x="950" y="852" text-anchor="middle" class="tiny">path + write gates</text>
-    <circle cx="1300" cy="819" r="29" fill="#fff0e6" stroke="#e66a19" stroke-width="2"/>
-    <rect x="1288" y="810" width="24" height="16" rx="2" fill="none" stroke="#e66a19" stroke-width="2"/>
-    <text x="1300" y="770" text-anchor="middle" class="label orange">OUTPUT</text><text x="1300" y="852" text-anchor="middle" class="tiny">executive-summary.pptx</text>
+    <rect x="165" y="780" width="1270" height="78" rx="39" fill="#ffffff" stroke="#bdd0e4" stroke-width="2"/><line x1="280" y1="819" x2="1320" y2="819" stroke="#7da4d1" stroke-width="2" stroke-dasharray="7 7"/>
+    <circle cx="250" cy="819" r="29" fill="#e8f5ed" stroke="#1f8b4c" stroke-width="2"/><path d="M238 807 H260 V831 H238 Z M242 813 H256 M242 819 H256 M242 825 H256" fill="none" stroke="#1f8b4c" stroke-width="2"/><text x="250" y="770" text-anchor="middle" class="label green">INPUT</text><text x="250" y="852" text-anchor="middle" class="tiny">synthetic-report.xlsx</text>
+    <circle cx="600" cy="819" r="29" fill="#eaf2ff" stroke="#2667c9" stroke-width="2"/><text x="600" y="827" text-anchor="middle" style="font-family:monospace;font-size:19px;font-weight:700;fill:#2667c9">{ }</text><text x="600" y="770" text-anchor="middle" class="label blue">SPEC</text><text x="600" y="852" text-anchor="middle" class="tiny">deck_spec.json</text>
+    <circle cx="950" cy="819" r="29" fill="#eaf2ff" stroke="#2667c9" stroke-width="2"/><path d="M938 819 L946 827 L963 809" fill="none" stroke="#2667c9" stroke-width="3" stroke-linecap="round"/><text x="950" y="770" text-anchor="middle" class="label blue">CONTROLS</text><text x="950" y="852" text-anchor="middle" class="tiny">path + write gates</text>
+    <circle cx="1300" cy="819" r="29" fill="#fff0e6" stroke="#e66a19" stroke-width="2"/><rect x="1288" y="810" width="24" height="16" rx="2" fill="none" stroke="#e66a19" stroke-width="2"/><text x="1300" y="770" text-anchor="middle" class="label orange">OUTPUT</text><text x="1300" y="852" text-anchor="middle" class="tiny">executive-summary.pptx</text>
   </g>
 </svg>
