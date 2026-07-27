@@ -1,0 +1,30 @@
+schema_version: 1
+asset_id: governed-finance-agent-operating-model-companion-v0.1
+title: The Missing Infrastructure for Finance Agents
+subtitle: A governed finance operating model from regulation to ledger
+asset_type: public-safe-pdf-companion
+source_format: governed-private-presentation
+pages: 6
+sha256: 9cf72b7709cd9a1548d4a89b4b12ec54790e1e585280cbb8c7e831512388b23e
+license: CC0-1.0
+alt_text: >-
+  A six-page Dosev AI presentation explaining a proposed regulation-to-ledger control plane,
+  role-bounded finance agents, segregation of duties, transaction provenance, and a bounded
+  proof-of-concept path.
+caption: >-
+  Public-safe companion to the dosevai.com article on the infrastructure required for governed finance agents.
+semantic_description: >-
+  The document presents a conceptual architecture connecting external authority, approved company policy,
+  deterministic calculations, specialist and reviewer agents, controlled ERP execution, human authorization,
+  and transaction-level evidence.
+claims:
+  - The document is a conceptual synthesis using existing standards and agent patterns.
+  - A bounded proof of method can start with synthetic cases and repository-based governance.
+boundaries:
+  - Not evidence of a deployed enterprise accounting platform.
+  - Not a claim of autonomous accounting, guaranteed compliance, audit acceptance, or cost savings.
+  - Contains no employer, supplier, client, private-repository, credential, or internal-governance information.
+  - The public PDF contains no speaker notes.
+creation_method: >-
+  Generated as a compressed public-safe derivative of the reviewed private presentation pack and rendered for inspection.
+public_safety_state: reviewed-public-safe
