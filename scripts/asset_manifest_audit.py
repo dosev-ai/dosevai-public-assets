@@ -13,6 +13,7 @@ UNSAFE_CODES = {
     "PUBLIC_SAFE_REQUIRED",
     "UNSAFE_RESOURCE_FLAGS",
     "REMOTE_FONTS_FORBIDDEN",
+    "SYMLINK_FORBIDDEN",
     "SVG_DTD_FORBIDDEN",
     "SVG_PROCESSING_INSTRUCTION_FORBIDDEN",
     "SVG_JAVASCRIPT_FORBIDDEN",
@@ -36,7 +37,7 @@ def _manifest_path(parent: Path, stem: str) -> Path:
 
 
 def _classification(code: str) -> str:
-    if code == "UNSUPPORTED_PROFILE":
+    if code in {"UNSUPPORTED_PROFILE", "UNSUPPORTED_ASSET_FORMAT"}:
         return "unsupported_profile"
     if code in UNSAFE_CODES:
         return "unsafe"
@@ -71,17 +72,31 @@ def _item(
 def _discover_roots(repo_root: Path, include_roots: Iterable[str] | None) -> list[Path]:
     names = tuple(include_roots or DEFAULT_AUDIT_ROOTS)
     roots: list[Path] = []
+    seen: set[Path] = set()
     for name in names:
         candidate = (repo_root / name).resolve()
         try:
             candidate.relative_to(repo_root)
         except ValueError as exc:
             raise ManifestError("INVALID_AUDIT_ROOT", name) from exc
-        if candidate.is_dir():
+        if candidate.is_dir() and candidate not in seen:
+            seen.add(candidate)
             roots.append(candidate)
     if not roots:
         raise ManifestError("NO_AUDIT_ROOTS", ", ".join(names))
-    return roots
+    return sorted(roots)
+
+
+def _unsupported_adjacent_assets(manifest_path: Path, stem: str) -> list[Path]:
+    return sorted(
+        path
+        for path in manifest_path.parent.iterdir()
+        if path.is_file()
+        and not path.is_symlink()
+        and path.name != manifest_path.name
+        and path.stem == stem
+        and not path.name.endswith(MANIFEST_SUFFIX)
+    )
 
 
 def audit_repository(repo_root: Path, include_roots: Iterable[str] | None = None) -> dict[str, Any]:
@@ -93,8 +108,22 @@ def audit_repository(repo_root: Path, include_roots: Iterable[str] | None = None
     asset_suffixes = set(MIME_BY_SUFFIX)
     assets: list[Path] = []
     manifests: list[Path] = []
+    items: list[dict[str, Any]] = []
     for scan_root in scan_roots:
         for path in scan_root.rglob("*"):
+            if path.is_symlink():
+                if path.name.endswith(MANIFEST_SUFFIX) or path.suffix.lower() in asset_suffixes:
+                    items.append(
+                        _item(
+                            root=root,
+                            status="unsafe",
+                            code="SYMLINK_FORBIDDEN",
+                            message="asset packages may not contain symlinked assets or manifests",
+                            asset_paths=[path] if not path.name.endswith(MANIFEST_SUFFIX) else (),
+                            manifest_path=path if path.name.endswith(MANIFEST_SUFFIX) else None,
+                        )
+                    )
+                continue
             if not path.is_file():
                 continue
             if path.name.endswith(MANIFEST_SUFFIX):
@@ -103,10 +132,9 @@ def audit_repository(repo_root: Path, include_roots: Iterable[str] | None = None
                 assets.append(path)
 
     grouped_assets: dict[tuple[Path, str], list[Path]] = {}
-    for asset in sorted(assets):
+    for asset in sorted(set(assets)):
         grouped_assets.setdefault((asset.parent, asset.stem), []).append(asset)
 
-    items: list[dict[str, Any]] = []
     consumed_manifests: set[Path] = set()
     for (parent, stem), variants in sorted(
         grouped_assets.items(),
@@ -145,6 +173,12 @@ def audit_repository(repo_root: Path, include_roots: Iterable[str] | None = None
         try:
             manifest = load_mapping(manifest_path)
             validated = validate_manifest(manifest, asset)
+            actual_source_path = _relative(asset, root)
+            if validated["source_path"] != actual_source_path:
+                raise ManifestError(
+                    "ASSET_SOURCE_PATH_MISMATCH",
+                    f"{validated['source_path']} != {actual_source_path}",
+                )
         except ManifestError as exc:
             items.append(
                 _item(
@@ -172,16 +206,39 @@ def audit_repository(repo_root: Path, include_roots: Iterable[str] | None = None
 
     for manifest_path in sorted(set(manifests) - consumed_manifests):
         stem = manifest_path.name[: -len(MANIFEST_SUFFIX)]
-        candidates = [manifest_path.parent / f"{stem}{suffix}" for suffix in sorted(asset_suffixes)]
-        existing = [path for path in candidates if path.exists()]
+        supported = [manifest_path.parent / f"{stem}{suffix}" for suffix in sorted(asset_suffixes)]
+        supported_existing = [path for path in supported if path.exists()]
+        unsupported_existing = _unsupported_adjacent_assets(manifest_path, stem)
+        if unsupported_existing and not supported_existing:
+            items.append(
+                _item(
+                    root=root,
+                    status="unsupported_profile",
+                    code="UNSUPPORTED_ASSET_FORMAT",
+                    message="manifest has an adjacent asset whose format/profile is not active",
+                    asset_paths=unsupported_existing,
+                    manifest_path=manifest_path,
+                )
+            )
+            continue
         items.append(
             _item(
                 root=root,
                 status="orphan_manifest",
-                code="ORPHAN_MANIFEST" if not existing else "UNMATCHED_MANIFEST",
+                code="ORPHAN_MANIFEST" if not supported_existing else "UNMATCHED_MANIFEST",
                 message="manifest has no unique supported adjacent asset",
-                asset_paths=existing,
+                asset_paths=supported_existing,
                 manifest_path=manifest_path,
+            )
+        )
+
+    if not items:
+        items.append(
+            _item(
+                root=root,
+                status="repair",
+                code="NO_ASSET_PACKAGES",
+                message="no governed asset packages were found in the selected audit roots",
             )
         )
 
