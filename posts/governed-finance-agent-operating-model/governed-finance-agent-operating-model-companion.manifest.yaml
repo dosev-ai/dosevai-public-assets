@@ -1,35 +1,41 @@
 schema_version: 1
+profile: document_pdf
 asset_id: governed-finance-agent-operating-model-companion
+content_id: post:governed-finance-agent-operating-model
+source_class: project_owned
+project: personal-operating-system
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/governed-finance-agent-operating-model/governed-finance-agent-operating-model-companion.pdf
+mime_type: application/pdf
+sha256: 29560548d8f89a471805ab2cc3e49ce9cf648cbd67eda78cc4ae417e6c961a29
+role: document_companion
 title: The Missing Infrastructure for Finance Agents
 subtitle: An incremental decision-control layer from existing standards to governed enterprise execution
-asset_type: public-safe-pdf-companion
-source_format: governed-public-presentation
-pages: 8
-sha256: 29560548d8f89a471805ab2cc3e49ce9cf648cbd67eda78cc4ae417e6c961a29
+alt: An eight-page Dosev AI presentation explaining why finance, procurement and technology leaders should care about governed enterprise agents, how existing standards and systems form the foundation, how onboarding agents can produce a readiness audit and PRD/ADR package, how bounded runtime agents escalate missing authority, and how a decision passport preserves policy, evidence, review and authorization.
+caption: Public-safe implementation companion to the dosevai.com article on the missing decision-control layer for governed finance and procurement agents.
+semantic_description: The document presents an incremental architecture connecting existing standards, a governed corporate knowledge layer, onboarding and runtime agents, human escalation, transaction-level decision provenance, and an illustrative CFO-CPO-CIO implementation plan with OKRs and evidence gates.
+claims:
+- Existing taxonomies, audit-data standards, enterprise systems and interfaces provide much of the structural foundation.
+- The proposed missing building block is a governed decision-control layer rather than a replacement ERP or new data standard.
+- A bounded proof of method can begin with synthetic cases, onboarding audits and human approval gates.
+boundaries:
+- Conceptual synthesis, not evidence of a deployed enterprise finance or procurement platform.
+- Not a claim of autonomous accounting, autonomous procurement, guaranteed compliance, audit acceptance or savings.
+- Contains no employer, supplier, client, private-repository, credential or internal-governance information.
+- The public PDF contains no speaker notes.
+creation_method: Generated as an eight-page public-safe companion, rendered and visually inspected before publication.
+contributor: Delyan Dosev
 license: CC0-1.0
+public_safe: true
+guide_eligible: false
+external_resources: false
+scripts: false
+page_count: 8
+source_format: governed-public-presentation
+render_inspected: true
+render_evidence: Legacy package records that all 8 pages were rendered and visually inspected before publication.
+private_notes_removed: true
+embedded_object_policy: forbid
+annotation_policy: forbid
 filename_policy: unversioned-current-companion
 update_policy: replace through a reviewed repository commit and update the CMS to the new immutable commit URL
-alt_text: >-
-  An eight-page Dosev AI presentation explaining why finance, procurement and technology leaders
-  should care about governed enterprise agents, how existing standards and systems form the foundation,
-  how onboarding agents can produce a readiness audit and PRD/ADR package, how bounded runtime agents
-  escalate missing authority, and how a decision passport preserves policy, evidence, review and authorization.
-caption: >-
-  Public-safe implementation companion to the dosevai.com article on the missing decision-control layer
-  for governed finance and procurement agents.
-semantic_description: >-
-  The document presents an incremental architecture connecting existing standards, a governed corporate
-  knowledge layer, onboarding and runtime agents, human escalation, transaction-level decision provenance,
-  and an illustrative CFO-CPO-CIO implementation plan with OKRs and evidence gates.
-claims:
-  - Existing taxonomies, audit-data standards, enterprise systems and interfaces provide much of the structural foundation.
-  - The proposed missing building block is a governed decision-control layer rather than a replacement ERP or new data standard.
-  - A bounded proof of method can begin with synthetic cases, onboarding audits and human approval gates.
-boundaries:
-  - Conceptual synthesis, not evidence of a deployed enterprise finance or procurement platform.
-  - Not a claim of autonomous accounting, autonomous procurement, guaranteed compliance, audit acceptance or savings.
-  - Contains no employer, supplier, client, private-repository, credential or internal-governance information.
-  - The public PDF contains no speaker notes.
-creation_method: >-
-  Generated as an eight-page public-safe companion, rendered and visually inspected before publication.
-public_safety_state: reviewed-public-safe
