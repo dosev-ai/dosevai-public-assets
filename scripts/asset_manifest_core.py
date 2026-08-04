@@ -1,6 +1,7 @@
 """Core governed asset-manifest schema, normalization, and validation."""
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import mimetypes
 import re
@@ -8,6 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 import yaml
+from yaml.constructor import ConstructorError
 
 from asset_manifest_svg import SvgValidationError, validate_svg
 
@@ -37,6 +39,26 @@ REQUIRED = {
 }
 ROLE_MAP = {"cover": "explanatory_cover", "inline": "explanatory_inline", "gallery": "gallery_item"}
 MIME_BY_SUFFIX = {".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+OPTIONAL_TYPES = {
+    "visual_id": str, "sha256": str, "role": str, "section_anchor": (str, type(None)), "sequence": int,
+    "step_key": str, "title": str, "audience": list, "remote_fonts": bool, "created_at": str,
+}
+
+
+class UniqueKeyLoader(yaml.SafeLoader):
+    pass
+
+
+def _construct_unique_mapping(loader: UniqueKeyLoader, node: yaml.MappingNode, deep: bool = False) -> dict[Any, Any]:
+    mapping: dict[Any, Any] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise ConstructorError("while constructing a mapping", node.start_mark, f"duplicate key: {key!r}", key_node.start_mark)
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+UniqueKeyLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_unique_mapping)
 
 
 class ManifestError(ValueError):
@@ -52,10 +74,10 @@ def fail(code: str, message: str) -> None:
 
 def load_mapping(path: Path) -> dict[str, Any]:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
     except FileNotFoundError:
         fail("FILE_NOT_FOUND", str(path))
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, UnicodeDecodeError) as exc:
         fail("INVALID_YAML", str(exc))
     if not isinstance(data, dict):
         fail("INVALID_DOCUMENT", "manifest root must be a mapping")
@@ -110,6 +132,14 @@ def legacy_bool(value: Any, field: str) -> bool:
     fail("INVALID_LEGACY_BOOLEAN", f"{field}={value!r}")
 
 
+def _matches_type(value: Any, expected: type | tuple[type, ...]) -> bool:
+    if expected is int:
+        return type(value) is int
+    if expected is bool:
+        return type(value) is bool
+    return isinstance(value, expected)
+
+
 def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[str, Any]:
     unknown = sorted(set(data) - ALLOWED_KEYS)
     if unknown:
@@ -118,8 +148,12 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
         value = data.get(key)
         if key not in data:
             fail("MISSING_FIELD", key)
-        if not isinstance(value, expected) or (expected is str and not value.strip()):
+        if not _matches_type(value, expected) or (expected is str and not value.strip()):
             fail("INVALID_FIELD_TYPE", f"{key} must be {expected.__name__}")
+    for key, expected in OPTIONAL_TYPES.items():
+        if key in data and not _matches_type(data[key], expected):
+            expected_name = expected.__name__ if isinstance(expected, type) else " or ".join(item.__name__ for item in expected)
+            fail("INVALID_FIELD_TYPE", f"{key} must be {expected_name}")
     if data["schema_version"] != SCHEMA_VERSION:
         fail("UNSUPPORTED_SCHEMA_VERSION", str(data["schema_version"]))
     if data["profile"] not in SUPPORTED_PROFILES:
@@ -129,6 +163,8 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
             fail("IDENTITY_MISMATCH", "visual_id must equal asset_id for image profile v1")
         if data.get("remote_fonts") is not False:
             fail("REMOTE_FONTS_FORBIDDEN", "remote_fonts must be false")
+    if "audience" in data and (not data["audience"] or not all(isinstance(item, str) and item.strip() for item in data["audience"])):
+        fail("EMPTY_SEMANTIC_LIST", "audience")
     for key in ("claims", "boundaries"):
         if not data[key] or not all(isinstance(item, str) and item.strip() for item in data[key]):
             fail("EMPTY_SEMANTIC_LIST", key)
@@ -138,7 +174,7 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
         fail("UNSAFE_RESOURCE_FLAGS", "external_resources and scripts must be false")
 
     source_path = safe_path(data["source_path"])
-    if not re.fullmatch(r"[^/\s]+/[^/\s]+", data["source_repository"]):
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", data["source_repository"]) or ".." in data["source_repository"].split("/"):
         fail("INVALID_SOURCE_REPOSITORY", data["source_repository"])
     expected_mime = MIME_BY_SUFFIX.get(PurePosixPath(source_path).suffix.lower())
     if expected_mime and data["mime_type"] != expected_mime:
@@ -183,6 +219,11 @@ def normalize_legacy(
     if public_safe is not True:
         fail("LEGACY_PUBLIC_SAFETY_UNRECOGNIZED", repr(state))
     source_path = safe_path(source_path)
+    created_at = legacy.get("created_at")
+    if isinstance(created_at, (dt.date, dt.datetime)):
+        created_at = created_at.isoformat()
+    elif created_at is not None and not isinstance(created_at, str):
+        fail("INVALID_LEGACY_CREATED_AT", repr(created_at))
     data: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION, "profile": "image", "asset_id": visual_id, "visual_id": visual_id,
         "content_id": target["slug"], "source_class": source_class, "project": project,
@@ -195,7 +236,7 @@ def normalize_legacy(
         "public_safe": True, "guide_eligible": bool(legacy.get("guide_eligible", False)),
         "external_resources": legacy_bool(legacy.get("external_resources"), "external_resources"),
         "scripts": legacy_bool(legacy.get("scripts"), "scripts"),
-        "remote_fonts": legacy_bool(legacy.get("remote_fonts"), "remote_fonts"), "created_at": legacy.get("created_at"),
+        "remote_fonts": legacy_bool(legacy.get("remote_fonts"), "remote_fonts"), "created_at": created_at,
     }
     if asset is not None:
         data["sha256"] = sha256(asset)

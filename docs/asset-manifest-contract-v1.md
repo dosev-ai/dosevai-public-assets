@@ -21,7 +21,7 @@ python scripts/asset_manifest.py inspect repaired.manifest.yaml
 python scripts/asset_manifest.py generate metadata.yaml --output figure.manifest.yaml --asset figure.svg
 ```
 
-Normalization is fail-closed. Unknown fields, unsupported public-safety values, wrong scalar types, unsafe paths, MIME mismatches, checksum mismatches, scripts, external resources, inaccessible SVGs, XInclude, and active or foreign SVG content return machine-readable error codes.
+Normalization is fail-closed. Duplicate YAML keys, unknown fields, unsupported public-safety values, wrong scalar types, unsafe paths, MIME mismatches, checksum mismatches, scripts, external resources, inaccessible SVGs, XInclude, foreign namespaces, animation, and active or foreign SVG content return machine-readable error codes.
 
 ## Ownership boundary
 

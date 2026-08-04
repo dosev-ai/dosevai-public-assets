@@ -5,6 +5,7 @@ import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+SVG_NS = "http://www.w3.org/2000/svg"
 XINCLUDE = "http://www.w3.org/2001/XInclude"
 FORBIDDEN_ELEMENTS = {"script", "foreignObject", "image", "animate", "animateMotion", "animateTransform", "set"}
 RAW_PATTERNS = {
@@ -69,13 +70,19 @@ def validate_svg(path: Path) -> None:
 
     for node in root.iter():
         name = local_name(node.tag)
-        if namespace(node.tag) == XINCLUDE and name == "include":
-            reject("SVG_XINCLUDE_FORBIDDEN", "XInclude is not allowed")
+        node_namespace = namespace(node.tag)
+        if node_namespace == XINCLUDE:
+            reject("SVG_XINCLUDE_FORBIDDEN", "XInclude namespace is not allowed")
+        if node_namespace not in {"", SVG_NS}:
+            reject("SVG_FOREIGN_NAMESPACE_FORBIDDEN", node_namespace)
         if name in FORBIDDEN_ELEMENTS:
             reject("SVG_ACTIVE_OR_FOREIGN_CONTENT", name)
         for attr, value in node.attrib.items():
             attr_name = local_name(attr).lower()
             text = str(value).strip().lower()
+            for code, pattern in RAW_PATTERNS.items():
+                if code != "SVG_DTD_FORBIDDEN" and pattern.search(text):
+                    reject(code, str(value))
             if attr_name.startswith("on"):
                 reject("SVG_EVENT_HANDLER_FORBIDDEN", attr_name)
             if attr_name == "base" and attr.startswith("{http://www.w3.org/XML/1998/namespace}"):
@@ -84,3 +91,7 @@ def validate_svg(path: Path) -> None:
                 text.startswith(("http:", "https:", "javascript:", "data:", "//"))
             ):
                 reject("SVG_EXTERNAL_REFERENCE_FORBIDDEN", str(value))
+        text_content = (node.text or "") + (node.tail or "")
+        for code, pattern in RAW_PATTERNS.items():
+            if code not in {"SVG_DTD_FORBIDDEN", "SVG_PROCESSING_INSTRUCTION_FORBIDDEN"} and pattern.search(text_content):
+                reject(code, text_content.strip())

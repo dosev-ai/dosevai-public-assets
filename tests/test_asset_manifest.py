@@ -60,6 +60,7 @@ class AssetManifestTests(unittest.TestCase):
         self.assertEqual(data["license"], "CC0-1.0")
         self.assertTrue(data["public_safe"])
         self.assertFalse(data["scripts"])
+        self.assertIsInstance(data.get("created_at", ""), str)
         self.assertRegex(data["sha256"], r"^[0-9a-f]{64}$")
         validated = self.run_cli("validate", str(output), "--asset", str(Path(directory.name) / "figure.svg"))
         self.assertEqual(validated.returncode, 0, validated.stderr)
@@ -82,6 +83,39 @@ class AssetManifestTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         self.assertEqual(result.returncode, 2)
         self.assertIn("SVG_CSS_IMPORT_FORBIDDEN", result.stderr)
+
+    def test_rejects_duplicate_yaml_key(self) -> None:
+        result, _, directory = self.normalize(LEGACY + "role: cover\n")
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("INVALID_YAML", result.stderr)
+
+    def test_rejects_boolean_schema_version(self) -> None:
+        result, output, directory = self.normalize()
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        text = output.read_text(encoding="utf-8").replace("schema_version: 1", "schema_version: true")
+        output.write_text(text, encoding="utf-8")
+        validated = self.run_cli("validate", str(output))
+        self.assertEqual(validated.returncode, 2)
+        self.assertIn("INVALID_FIELD_TYPE", validated.stderr)
+
+    def test_rejects_encoded_external_style_url(self) -> None:
+        unsafe = SVG.replace("<rect", '<rect style="fill:url(&quot;https://example.com/x.svg&quot;)"')
+        result, _, directory = self.normalize(svg_text=unsafe)
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("SVG_EXTERNAL_CSS_URL_FORBIDDEN", result.stderr)
+
+    def test_rejects_xinclude_namespace(self) -> None:
+        unsafe = SVG.replace(
+            "</svg>",
+            '<fallback xmlns="http://www.w3.org/2001/XInclude"><rect width="1" height="1"/></fallback></svg>',
+        )
+        result, _, directory = self.normalize(svg_text=unsafe)
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("SVG_XINCLUDE_FORBIDDEN", result.stderr)
 
 
 if __name__ == "__main__":
