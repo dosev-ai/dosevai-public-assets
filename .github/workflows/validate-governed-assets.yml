@@ -41,6 +41,7 @@ jobs:
         run: >-
           python scripts/asset_manifest.py audit
           --root .
+          --expected-repository dosev-ai/dosevai-public-assets
           --format text
           --allow-findings
       - name: Validate changed asset packages
