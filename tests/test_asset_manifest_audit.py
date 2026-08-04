@@ -178,6 +178,28 @@ class AuditTests(unittest.TestCase):
             self.assertFalse(report["ok"])
             self.assertEqual(report["items"][0]["code"], "NO_ASSET_PACKAGES")
 
+    def test_cli_can_allow_only_inactive_profiles(self) -> None:
+        with self.make_repo() as directory:
+            root = Path(directory)
+            package = root / "posts" / "sample"
+            (package / "companion.pdf").write_bytes(b"%PDF-1.7\n")
+            (package / "companion.manifest.yaml").write_text("profile: document_pdf\n", encoding="utf-8")
+            command = [
+                sys.executable, str(SCRIPTS / "asset_manifest.py"), "audit",
+                "--root", str(root), "--allow-status", "unsupported_profile",
+            ]
+            allowed = subprocess.run(command, text=True, capture_output=True, check=False)
+            self.assertEqual(allowed.returncode, 0, allowed.stderr)
+            report = json.loads(allowed.stdout)
+            self.assertTrue(report["gate_ok"])
+            self.assertEqual(report["blocking_finding_count"], 0)
+            (package / "cover.svg").write_text(VALID_SVG, encoding="utf-8")
+            blocked = subprocess.run(command, text=True, capture_output=True, check=False)
+            self.assertEqual(blocked.returncode, 2)
+            report = json.loads(blocked.stdout)
+            self.assertFalse(report["gate_ok"])
+            self.assertEqual(report["blocking_finding_count"], 1)
+
     def test_cli_fails_on_findings_and_can_emit_report(self) -> None:
         with self.make_repo() as directory:
             root = Path(directory)
