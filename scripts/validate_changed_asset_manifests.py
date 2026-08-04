@@ -11,18 +11,34 @@ from pathlib import Path, PurePosixPath
 from asset_manifest_core import ManifestError, load_mapping, validate_manifest
 
 ASSET_SUFFIXES = {".svg", ".png", ".jpg", ".jpeg", ".webp", ".mp3", ".wav", ".m4a", ".pdf", ".pptx"}
+MANIFEST_SUFFIX = ".manifest.yaml"
 
 
 def changed_paths(repo_root: Path, base: str) -> list[str]:
     if not base or set(base) == {"0"}:
         return [path.relative_to(repo_root).as_posix() for path in repo_root.glob("posts/**/*.manifest.yaml")]
-    commands = (["git", "diff", "--name-only", "--diff-filter=ACMR", f"{base}...HEAD"],
-                ["git", "diff", "--name-only", "--diff-filter=ACMR", base, "HEAD"])
+    commands = (
+        ["git", "diff", "--name-only", "--diff-filter=ACMRD", f"{base}...HEAD"],
+        ["git", "diff", "--name-only", "--diff-filter=ACMRD", base, "HEAD"],
+    )
     for command in commands:
         result = subprocess.run(command, cwd=repo_root, text=True, capture_output=True, check=False)
         if result.returncode == 0:
             return [line.strip() for line in result.stdout.splitlines() if line.strip()]
     raise ManifestError("GIT_DIFF_FAILED", result.stderr.strip() or base)
+
+
+def manifest_for_asset(asset: Path) -> Path:
+    return asset.with_name(asset.stem + MANIFEST_SUFFIX)
+
+
+def adjacent_assets_for_manifest(manifest: Path) -> list[Path]:
+    prefix = manifest.name[: -len(MANIFEST_SUFFIX)]
+    return sorted(
+        path
+        for path in manifest.parent.iterdir()
+        if path.is_file() and path.stem == prefix and path.suffix.lower() in ASSET_SUFFIXES
+    ) if manifest.parent.exists() else []
 
 
 def manifests_for_paths(repo_root: Path, paths: list[str]) -> list[Path]:
@@ -32,16 +48,47 @@ def manifests_for_paths(repo_root: Path, paths: list[str]) -> list[Path]:
         if not rel.parts or rel.parts[0] == "fixtures":
             continue
         candidate = repo_root.joinpath(*rel.parts)
-        if raw.endswith(".manifest.yaml"):
+        if raw.endswith(MANIFEST_SUFFIX):
             if candidate.exists():
                 selected.add(candidate)
+            elif rel.parts[0] == "posts" and adjacent_assets_for_manifest(candidate):
+                raise ManifestError(
+                    "ORPHANED_ASSET_AFTER_MANIFEST_DELETE",
+                    candidate.relative_to(repo_root).as_posix(),
+                )
             continue
         if rel.suffix.lower() in ASSET_SUFFIXES and rel.parts[0] == "posts":
-            manifest = candidate.with_name(candidate.stem + ".manifest.yaml")
-            if not manifest.exists():
-                raise ManifestError("ADJACENT_MANIFEST_REQUIRED", manifest.relative_to(repo_root).as_posix())
-            selected.add(manifest)
+            manifest = manifest_for_asset(candidate)
+            if candidate.exists():
+                if not manifest.exists():
+                    raise ManifestError("ADJACENT_MANIFEST_REQUIRED", manifest.relative_to(repo_root).as_posix())
+                selected.add(manifest)
+            elif manifest.exists():
+                raise ManifestError(
+                    "ORPHANED_MANIFEST_AFTER_ASSET_DELETE",
+                    manifest.relative_to(repo_root).as_posix(),
+                )
     return sorted(selected)
+
+
+def expected_adjacent_source(repo_root: Path, manifest: Path, source_path: str) -> Path:
+    source = PurePosixPath(source_path)
+    if source.is_absolute() or ".." in source.parts or not source.parts:
+        raise ManifestError("INVALID_SOURCE_PATH", source_path)
+    prefix = manifest.name[: -len(MANIFEST_SUFFIX)]
+    expected = manifest.parent / f"{prefix}{source.suffix}"
+    actual = repo_root.joinpath(*source.parts)
+    try:
+        expected_rel = expected.relative_to(repo_root).as_posix()
+        actual_rel = actual.relative_to(repo_root).as_posix()
+    except ValueError as exc:
+        raise ManifestError("INVALID_SOURCE_PATH", source_path) from exc
+    if actual_rel != expected_rel:
+        raise ManifestError(
+            "SOURCE_PATH_NOT_ADJACENT",
+            f"{manifest.relative_to(repo_root).as_posix()}: {actual_rel} != {expected_rel}",
+        )
+    return actual
 
 
 def validate_paths(repo_root: Path, paths: list[str]) -> list[dict[str, str]]:
@@ -53,7 +100,7 @@ def validate_paths(repo_root: Path, paths: list[str]) -> list[dict[str, str]]:
         source_path = data.get("source_path")
         if not isinstance(source_path, str):
             raise ManifestError("MISSING_FIELD", f"{manifest}: source_path")
-        asset = repo_root.joinpath(*PurePosixPath(source_path).parts)
+        asset = expected_adjacent_source(repo_root, manifest, source_path)
         validate_manifest(data, asset)
         results.append({
             "manifest": manifest.relative_to(repo_root).as_posix(),
