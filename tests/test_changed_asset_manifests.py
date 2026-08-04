@@ -112,7 +112,7 @@ class ChangedAssetManifestTests(unittest.TestCase):
         subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
         package = repo / "posts/test"
         package.mkdir(parents=True)
-        asset = packae / "foo.svg"
+        asset = package / "foo.svg"
         asset.write_text(SVG, encoding="utf-8")
         subprocess.run(["git", "add", "."], cwd=repo, check=True)
         subprocess.run(["git", "commit", "-qm", "base"], cwd=repo, check=True)
@@ -130,7 +130,7 @@ class ChangedAssetManifestTests(unittest.TestCase):
         package = repo / "posts/test"
         package.mkdir(parents=True)
         old_asset = package / "foo.svg"
-        old_manifest = packae / "foo.manifest.yaml"
+        old_manifest = package / "foo.manifest.yaml"
         old_asset.write_text(SVG, encoding="utf-8")
         old_manifest.write_text(yaml.safe_dump(manifest_data("posts/test/foo.svg", old_asset), sort_keys=False), encoding="utf-8")
         subprocess.run(["git", "add", "."], cwd=repo, check=True)
@@ -138,7 +138,7 @@ class ChangedAssetManifestTests(unittest.TestCase):
         base = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
 
         new_asset = package / "bar.svg"
-        new_manifest = packae / "bar.manifest.yaml"
+        new_manifest = package / "bar.manifest.yaml"
         old_asset.rename(new_asset)
         new_manifest.write_text(yaml.safe_dump(manifest_data("posts/test/bar.svg", new_asset), sort_keys=False), encoding="utf-8")
         subprocess.run(["git", "add", "-A"], cwd=repo, check=True)

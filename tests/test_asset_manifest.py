@@ -69,7 +69,7 @@ class AssetManifestTests(unittest.TestCase):
         cases = [
             (LEGACY + "invented_field: true\n", "UNKNOWN_LEGACY_FIELDS", "CC0-1.0"),
             (LEGACY + "role: cover\n", "INVALID_YAML", "CC0-1.0"),
-            (LGACY + "1: value\n", "INVALID_YAML", "CC0-1.0"),
+            (LEGACY + "1: value\n", "INVALID_YAML", "CC0-1.0"),
             (LEGACY, "LEGACY_LICENSE_MAPPING_REQUIRED", None),
         ]
         for source, code, license_id in cases:
