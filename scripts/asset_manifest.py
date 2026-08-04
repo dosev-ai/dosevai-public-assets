@@ -9,7 +9,8 @@ from pathlib import Path
 
 from asset_manifest_audit import audit_repository, format_audit_text
 from asset_manifest_core import (
-    ManifestError, canonical, dump_manifest, load_mapping, normalize_legacy, sha256, validate_manifest,
+    ManifestError, canonical, dump_manifest, load_mapping, normalize_legacy, normalize_pdf_legacy,
+    sha256, validate_manifest,
 )
 
 
@@ -28,6 +29,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     add_asset(inspect, required=False)
     normalize = commands.add_parser("normalize")
     normalize.add_argument("manifest", type=Path)
+    normalize.add_argument("--profile", choices=("image", "document_pdf"), default="image")
     normalize.add_argument("--output", type=Path, required=True)
     normalize.add_argument("--project", required=True)
     normalize.add_argument("--contributor", required=True)
@@ -36,6 +38,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     normalize.add_argument("--sequence", type=int, default=0)
     normalize.add_argument("--section-anchor")
     normalize.add_argument("--step-key")
+    normalize.add_argument("--content-id")
+    normalize.add_argument("--source-repository")
+    normalize.add_argument("--source-path")
+    normalize.add_argument("--role", default="document_companion")
+    normalize.add_argument("--render-evidence")
+    normalize.add_argument("--render-inspected", action="store_true")
+    normalize.add_argument("--private-notes-removed", action="store_true")
+    normalize.add_argument("--guide-eligible", action="store_true")
     add_asset(normalize, required=True)
     generate = commands.add_parser("generate")
     generate.add_argument("metadata", type=Path)
@@ -82,11 +92,29 @@ def main(argv: list[str] | None = None) -> int:
             }
             print(json.dumps(result, indent=2 if args.command == "inspect" else None, sort_keys=True))
         elif args.command == "normalize":
-            data = normalize_legacy(
-                load_mapping(args.manifest), project=args.project, contributor=args.contributor,
-                source_class=args.source_class, license_id=args.license_id, sequence=args.sequence,
-                section_anchor=args.section_anchor, step_key=args.step_key, asset=args.asset,
-            )
+            legacy = load_mapping(args.manifest)
+            if args.profile == "document_pdf":
+                required_args = {
+                    "content_id": args.content_id, "source_repository": args.source_repository,
+                    "source_path": args.source_path, "render_evidence": args.render_evidence,
+                }
+                missing = [key for key, value in required_args.items() if not value]
+                if missing:
+                    raise ManifestError("PDF_NORMALIZE_ARGUMENT_REQUIRED", ", ".join(missing))
+                data = normalize_pdf_legacy(
+                    legacy, project=args.project, contributor=args.contributor, content_id=args.content_id,
+                    source_repository=args.source_repository, source_path=args.source_path,
+                    render_evidence=args.render_evidence, source_class=args.source_class,
+                    license_id=args.license_id, role=args.role, guide_eligible=args.guide_eligible,
+                    render_inspected=args.render_inspected, private_notes_removed=args.private_notes_removed,
+                    asset=args.asset,
+                )
+            else:
+                data = normalize_legacy(
+                    legacy, project=args.project, contributor=args.contributor,
+                    source_class=args.source_class, license_id=args.license_id, sequence=args.sequence,
+                    section_anchor=args.section_anchor, step_key=args.step_key, asset=args.asset,
+                )
             write_output(args.output, data)
             print(json.dumps({"ok": True, "output": str(args.output), "asset_id": data["asset_id"]}, sort_keys=True))
         elif args.command == "audit":
