@@ -48,6 +48,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     audit.add_argument("--expected-repository")
     audit.add_argument("--output", type=Path)
     audit.add_argument("--allow-findings", action="store_true")
+    audit.add_argument(
+        "--allow-status",
+        action="append",
+        choices=("repair", "missing_manifest", "orphan_manifest", "unsupported_profile", "unsafe"),
+        default=[],
+    )
     return parser.parse_args(argv)
 
 
@@ -56,7 +62,7 @@ def write_output(path: Path, data: dict) -> None:
     path.write_text(dump_manifest(data), encoding="utf-8")
 
 
-def emit_audit(args: argparse.Namespace, report: dict) -> None:
+def _emit_audit(args: argparse.Namespace, report: dict) -> None:
     rendered = json.dumps(report, indent=2, sort_keys=True) if args.format == "json" else format_audit_text(report)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -85,8 +91,16 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"ok": True, "output": str(args.output), "asset_id": data["asset_id"]}, sort_keys=True))
         elif args.command == "audit":
             report = audit_repository(args.root, args.include_roots, args.expected_repository)
-            emit_audit(args, report)
-            return 0 if report["ok"] or args.allow_findings else 2
+            allowed_statuses = sorted(set(args.allow_status))
+            blocking_findings = [
+                item for item in report["items"]
+                if item["status"] != "pass" and item["status"] not in allowed_statuses
+            ]
+            report["allowed_statuses"] = allowed_statuses
+            report["blocking_finding_count"] = len(blocking_findings)
+            report["gate_ok"] = not blocking_findings
+            _emit_audit(args, report)
+            return 0 if args.allow_findings or report["gate_ok"] else 2
         else:
             data = load_mapping(args.metadata)
             if args.asset is not None:
