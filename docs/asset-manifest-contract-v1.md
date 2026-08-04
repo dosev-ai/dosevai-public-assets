@@ -14,7 +14,8 @@ The image profile retains `visual_id` as a compatibility field and requires it t
 python scripts/asset_manifest.py normalize legacy.manifest.yaml \
   --output repaired.manifest.yaml \
   --project personal-operating-system \
-  --contributor "OpenAI ChatGPT with Delyan Dosev direction"
+  --contributor "OpenAI ChatGPT with Delyan Dosev direction" \
+  --license CC0-1.0
 
 python scripts/asset_manifest.py validate repaired.manifest.yaml --asset figure.svg
 python scripts/asset_manifest.py inspect repaired.manifest.yaml
@@ -27,3 +28,7 @@ Normalization is fail-closed. Duplicate YAML keys, unknown fields, unsupported p
 ## Ownership boundary
 
 Producer skills create the asset and supply explicit semantic metadata. The packager owns field mapping, serialization, checksums, validation, and normalized output. Publishing skills and application code consume the normalized result and must not reproduce the core field list independently.
+
+## Legacy licence boundary
+
+Legacy prose `rights` cannot be translated automatically into a machine-readable license. `normalize` requires an explicit `--license`; omission fails with `LEGACY_LICENSE_MAPPING_REQUIRED`. The caller must verify repository policy and may not infer CC0 or another licence from prose rights.

@@ -36,154 +36,93 @@ class AssetManifestTests(unittest.TestCase):
     def run_cli(self, *args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run([sys.executable, str(SCRIPT), *args], cwd=ROOT, text=True, capture_output=True, check=False)
 
-    def normalize(self, legacy_text: str = LEGACY, svg_text: str = SVG) -> tuple[subprocess.CompletedProcess[str], Path, tempfile.TemporaryDirectory[str]]:
+    def workspace(self, legacy_text: str = LEGACY, svg_text: str = SVG) -> tuple[tempfile.TemporaryDirectory[str], Path, Path, Path]:
         directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
         temp = Path(directory.name)
-        legacy = temp / "legacy.yaml"
-        asset = temp / "figure.svg"
-        output = temp / "figure.manifest.yaml"
+        legacy, asset, output = temp / "legacy.yaml", temp / "figure.svg", temp / "figure.manifest.yaml"
         legacy.write_text(legacy_text, encoding="utf-8")
         asset.write_text(svg_text, encoding="utf-8")
-        result = self.run_cli(
-            "normalize", str(legacy), "--output", str(output), "--asset", str(asset),
-            "--project", "personal-operating-system", "--contributor", "OpenAI ChatGPT with Delyan Dosev direction",
-            "--sequence", "1",
-        )
-        return result, output, directory
+        return directory, legacy, asset, output
+
+    def normalize(self, legacy_text: str = LEGACY, svg_text: str = SVG, *, license_id: str | None = "CC0-1.0") -> tuple[subprocess.CompletedProcess[str], Path, Path]:
+        _, legacy, asset, output = self.workspace(legacy_text, svg_text)
+        args = ["normalize", str(legacy), "--output", str(output), "--asset", str(asset), "--project", "personal-operating-system", "--contributor", "OpenAI ChatGPT with Delyan Dosev direction"]
+        if license_id is not None:
+            args += ["--license", license_id]
+        args += ["--sequence", "1"]
+        return self.run_cli(*args), output, asset
 
     def test_normalize_and_validate(self) -> None:
-        result, output, directory = self.normalize()
-        self.addCleanup(directory.cleanup)
+        result, output, asset = self.normalize()
         self.assertEqual(result.returncode, 0, result.stderr)
         data = yaml.safe_load(output.read_text(encoding="utf-8"))
         self.assertEqual(data["asset_id"], data["visual_id"])
         self.assertEqual(data["license"], "CC0-1.0")
         self.assertTrue(data["public_safe"])
         self.assertFalse(data["scripts"])
-        self.assertIsInstance(data.get("created_at", ""), str)
         self.assertRegex(data["sha256"], r"^[0-9a-f]{64}$")
-        validated = self.run_cli("validate", str(output), "--asset", str(Path(directory.name) / "figure.svg"))
-        self.assertEqual(validated.returncode, 0, validated.stderr)
+        self.assertEqual(self.run_cli("validate", str(output), "--asset", str(asset)).returncode, 0)
 
-    def test_rejects_unknown_legacy_field(self) -> None:
-        result, _, directory = self.normalize(LEGACY + "invented_field: true\n")
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("UNKNOWN_LEGACY_FIELDS", result.stderr)
-
-    def test_rejects_script(self) -> None:
-        result, _, directory = self.normalize(svg_text=SVG.replace("</svg>", "<script>alert(1)</script></svg>"))
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("SVG_ACTIVE_OR_FOREIGN_CONTENT", result.stderr)
-
-    def test_rejects_external_css(self) -> None:
-        unsafe = SVG.replace("</svg>", '<style>@import url("https://example.com/x.css")</style></svg>')
-        result, _, directory = self.normalize(svg_text=unsafe)
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("SVG_CSS_IMPORT_FORBIDDEN", result.stderr)
-
-    def test_rejects_duplicate_yaml_key(self) -> None:
-        result, _, directory = self.normalize(LEGACY + "role: cover\n")
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("INVALID_YAML", result.stderr)
-
-    def test_rejects_boolean_schema_version(self) -> None:
-        result, output, directory = self.normalize()
-        self.addCleanup(directory.cleanup)
+    def test_legacy_normalization_boundaries(self) -> None:
+        cases = [
+            (LEGACY + "invented_field: true\n", "UNKNOWN_LEGACY_FIELDS", "CC0-1.0"),
+            (LEGACY + "role: cover\n", "INVALID_YAML", "CC0-1.0"),
+            (LEGACY + "1: value\n", "INVALID_YAML", "CC0-1.0"),
+            (LEGACY, "LEGACY_LICENSE_MAPPING_REQUIRED", None),
+        ]
+        for source, code, license_id in cases:
+            with self.subTest(code=code):
+                result, _, _ = self.normalize(source, license_id=license_id)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(code, result.stderr)
+        result, output, _ = self.normalize(LEGACY.replace("guide_eligible: true", 'guide_eligible: "false"'))
         self.assertEqual(result.returncode, 0, result.stderr)
-        text = output.read_text(encoding="utf-8").replace("schema_version: 1", "schema_version: true")
-        output.write_text(text, encoding="utf-8")
-        validated = self.run_cli("validate", str(output), "--asset", str(Path(directory.name) / "figure.svg"))
-        self.assertEqual(validated.returncode, 2)
-        self.assertIn("INVALID_FIELD_TYPE", validated.stderr)
+        self.assertFalse(yaml.safe_load(output.read_text(encoding="utf-8"))["guide_eligible"])
 
-    def test_rejects_encoded_external_style_url(self) -> None:
-        unsafe = SVG.replace("<rect", '<rect style="fill:url(&quot;https://example.com/x.svg&quot;)"')
-        result, _, directory = self.normalize(svg_text=unsafe)
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("SVG_EXTERNAL_CSS_URL_FORBIDDEN", result.stderr)
-
-    def test_rejects_xinclude_namespace(self) -> None:
-        unsafe = SVG.replace(
-            "</svg>",
-            '<fallback xmlns="http://www.w3.org/2001/XInclude"><rect width="1" height="1"/></fallback></svg>',
-        )
-        result, _, directory = self.normalize(svg_text=unsafe)
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("SVG_XINCLUDE_FORBIDDEN", result.stderr)
-
-    def test_rejects_relative_href_reference(self) -> None:
-        unsafe = SVG.replace("</svg>", '<use href="other.svg#thing"/></svg>')
-        result, _, directory = self.normalize(svg_text=unsafe)
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("SVG_EXTERNAL_REFERENCE_FORBIDDEN", result.stderr)
-
-    def test_rejects_relative_css_url(self) -> None:
-        unsafe = SVG.replace("<rect", '<rect style="fill:url(image.png)"')
-        result, _, directory = self.normalize(svg_text=unsafe)
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("SVG_EXTERNAL_CSS_URL_FORBIDDEN", result.stderr)
-
-    def test_rejects_encoded_css_import(self) -> None:
-        unsafe = SVG.replace("</svg>", '<style>@im&#x70;ort url(&#x68;ttps://example.com/x.css)</style></svg>')
-        result, _, directory = self.normalize(svg_text=unsafe)
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("SVG_CSS_IMPORT_FORBIDDEN", result.stderr)
-
-    def test_parses_false_like_guide_eligibility(self) -> None:
-        result, output, directory = self.normalize(LEGACY.replace("guide_eligible: true", 'guide_eligible: "false"'))
-        self.addCleanup(directory.cleanup)
+    def test_schema_types_and_asset_requirement(self) -> None:
+        result, output, asset = self.normalize()
         self.assertEqual(result.returncode, 0, result.stderr)
-        data = yaml.safe_load(output.read_text(encoding="utf-8"))
-        self.assertFalse(data["guide_eligible"])
+        output.write_text(output.read_text(encoding="utf-8").replace("schema_version: 1", "schema_version: true"), encoding="utf-8")
+        invalid = self.run_cli("validate", str(output), "--asset", str(asset))
+        self.assertEqual(invalid.returncode, 2)
+        self.assertIn("INVALID_FIELD_TYPE", invalid.stderr)
+        missing_asset = self.run_cli("validate", str(output))
+        self.assertEqual(missing_asset.returncode, 2)
+        self.assertIn("--asset", missing_asset.stderr)
 
-    def test_validate_requires_asset(self) -> None:
-        result, output, directory = self.normalize()
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        validated = self.run_cli("validate", str(output))
-        self.assertEqual(validated.returncode, 2)
-        self.assertIn("--asset", validated.stderr)
+    def test_svg_fail_closed_cases(self) -> None:
+        cases = [
+            (SVG.replace("</svg>", "<script>alert(1)</script></svg>"), "SVG_ACTIVE_OR_FOREIGN_CONTENT"),
+            (SVG.replace("</svg>", '<style>@import url("https://example.com/x.css")</style></svg>'), "SVG_CSS_IMPORT_FORBIDDEN"),
+            (SVG.replace("</svg>", '<style>@im&#x70;ort url(&#x68;ttps://example.com/x.css)</style></svg>'), "SVG_CSS_IMPORT_FORBIDDEN"),
+            (SVG.replace("<rect", '<rect style="fill:url(&quot;https://example.com/x.svg&quot;)"'), "SVG_EXTERNAL_CSS_URL_FORBIDDEN"),
+            (SVG.replace("<rect", r'<rect style="fill:url(\68 ttps://example.com/x.svg)"'), "SVG_EXTERNAL_CSS_URL_FORBIDDEN"),
+            (SVG.replace("<rect", '<rect style="fill:url(image.png)"'), "SVG_EXTERNAL_CSS_URL_FORBIDDEN"),
+            (SVG.replace("</svg>", '<use href="other.svg#thing"/></svg>'), "SVG_EXTERNAL_REFERENCE_FORBIDDEN"),
+            (SVG.replace("</svg>", '<fallback xmlns="http://www.w3.org/2001/XInclude"><rect width="1" height="1"/></fallback></svg>'), "SVG_XINCLUDE_FORBIDDEN"),
+            (SVG.replace('<title id="title">', '<title xmlns="" id="title">'), "SVG_FOREIGN_NAMESPACE_FORBIDDEN"),
+        ]
+        for unsafe, code in cases:
+            with self.subTest(code=code):
+                result, _, _ = self.normalize(svg_text=unsafe)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(code, result.stderr)
 
-    def test_rejects_unsupported_image_format(self) -> None:
-        result, output, directory = self.normalize()
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        temp = Path(directory.name)
-        data = yaml.safe_load(output.read_text(encoding="utf-8"))
-        data.pop("sha256", None)
-        data["source_path"] = "posts/test/payload.html"
-        data["mime_type"] = "text/html"
-        output.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
-        payload = temp / "payload.html"
-        payload.write_text("<script>alert(1)</script>", encoding="utf-8")
-        validated = self.run_cli("validate", str(output), "--asset", str(payload))
-        self.assertEqual(validated.returncode, 2)
-        self.assertIn("UNSUPPORTED_IMAGE_FORMAT", validated.stderr)
-
-    def test_rejects_invalid_raster_signature(self) -> None:
-        result, output, directory = self.normalize()
-        self.addCleanup(directory.cleanup)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        temp = Path(directory.name)
-        data = yaml.safe_load(output.read_text(encoding="utf-8"))
-        data.pop("sha256", None)
-        data["source_path"] = "posts/test/payload.png"
-        data["mime_type"] = "image/png"
-        output.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
-        payload = temp / "payload.png"
-        payload.write_text("<script>alert(1)</script>", encoding="utf-8")
-        validated = self.run_cli("validate", str(output), "--asset", str(payload))
-        self.assertEqual(validated.returncode, 2)
-        self.assertIn("IMAGE_SIGNATURE_MISMATCH", validated.stderr)
+    def test_image_format_and_signature_boundaries(self) -> None:
+        for suffix, mime, expected in [(".html", "text/html", "UNSUPPORTED_IMAGE_FORMAT"), (".png", "image/png", "IMAGE_SIGNATURE_MISMATCH")]:
+            with self.subTest(suffix=suffix):
+                result, output, _ = self.normalize()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                data = yaml.safe_load(output.read_text(encoding="utf-8"))
+                data.pop("sha256", None)
+                data["source_path"], data["mime_type"] = f"posts/test/payload{suffix}", mime
+                output.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+                payload = output.parent / f"payload{suffix}"
+                payload.write_text("<script>alert(1)</script>", encoding="utf-8")
+                invalid = self.run_cli("validate", str(output), "--asset", str(payload))
+                self.assertEqual(invalid.returncode, 2)
+                self.assertIn(expected, invalid.stderr)
 
 
 if __name__ == "__main__":

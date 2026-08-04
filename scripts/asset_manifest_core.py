@@ -53,6 +53,8 @@ def _construct_unique_mapping(loader: UniqueKeyLoader, node: yaml.MappingNode, d
     mapping: dict[Any, Any] = {}
     for key_node, value_node in node.value:
         key = loader.construct_object(key_node, deep=deep)
+        if not isinstance(key, str):
+            raise ConstructorError("while constructing a mapping", node.start_mark, f"non-string key: {key!r}", key_node.start_mark)
         if key in mapping:
             raise ConstructorError("while constructing a mapping", node.start_mark, f"duplicate key: {key!r}", key_node.start_mark)
         mapping[key] = loader.construct_object(value_node, deep=deep)
@@ -218,7 +220,7 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
 
 def normalize_legacy(
     legacy: dict[str, Any], *, project: str, contributor: str, source_class: str = "project_owned",
-    license_id: str = "CC0-1.0", sequence: int = 0, section_anchor: str | None = None,
+    license_id: str | None = None, sequence: int = 0, section_anchor: str | None = None,
     step_key: str | None = None, asset: Path | None = None,
 ) -> dict[str, Any]:
     unknown = sorted(set(legacy) - LEGACY_KEYS)
@@ -238,6 +240,8 @@ def normalize_legacy(
     if public_safe is not True:
         fail("LEGACY_PUBLIC_SAFETY_UNRECOGNIZED", repr(state))
     source_path = safe_path(source_path)
+    if not isinstance(license_id, str) or not license_id.strip():
+        fail("LEGACY_LICENSE_MAPPING_REQUIRED", f"explicit license required for legacy rights: {legacy.get('rights')!r}")
     created_at = legacy.get("created_at")
     if isinstance(created_at, (dt.date, dt.datetime)):
         created_at = created_at.isoformat()

@@ -31,7 +31,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     normalize.add_argument("--project", required=True)
     normalize.add_argument("--contributor", required=True)
     normalize.add_argument("--source-class", default="project_owned")
-    normalize.add_argument("--license", dest="license_id", default="CC0-1.0")
+    normalize.add_argument("--license", dest="license_id")
     normalize.add_argument("--sequence", type=int, default=0)
     normalize.add_argument("--section-anchor")
     normalize.add_argument("--step-key")

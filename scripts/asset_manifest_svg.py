@@ -16,6 +16,7 @@ RAW_PATTERNS = {
     "SVG_EXTERNAL_CSS_URL_FORBIDDEN": re.compile(r"url\(\s*['\"]?(?:https?:|//|data:|javascript:)", re.I),
 }
 CSS_URL_PATTERN = re.compile(r"url\(\s*['\"]?([^'\")\s]+)", re.I)
+CSS_ESCAPE_PATTERN = re.compile(r"\\([0-9a-fA-F]{1,6})(?:[ \t\r\n\f])?|\\(.)", re.S)
 
 
 class SvgValidationError(ValueError):
@@ -37,7 +38,19 @@ def namespace(tag: str) -> str:
     return tag[1:].split("}", 1)[0] if tag.startswith("{") else ""
 
 
+def decode_css_escapes(text: str) -> str:
+    def replace(match: re.Match[str]) -> str:
+        if match.group(1):
+            codepoint = int(match.group(1), 16)
+            if codepoint == 0 or codepoint > 0x10FFFF or 0xD800 <= codepoint <= 0xDFFF:
+                return "\ufffd"
+            return chr(codepoint)
+        return match.group(2) or ""
+    return CSS_ESCAPE_PATTERN.sub(replace, text)
+
+
 def reject_non_fragment_css_urls(text: str) -> None:
+    text = decode_css_escapes(text)
     for match in CSS_URL_PATTERN.finditer(text):
         target = match.group(1).strip()
         if not target.startswith("#"):
@@ -61,6 +74,14 @@ def validate_svg(path: Path) -> None:
 
     if local_name(root.tag) != "svg":
         reject("INVALID_SVG_ROOT", root.tag)
+    if namespace(root.tag) != SVG_NS:
+        reject("SVG_NAMESPACE_REQUIRED", namespace(root.tag) or "missing")
+    for node in root.iter():
+        node_namespace = namespace(node.tag)
+        if node_namespace == XINCLUDE:
+            reject("SVG_XINCLUDE_FORBIDDEN", "XInclude namespace is not allowed")
+        if node_namespace != SVG_NS:
+            reject("SVG_FOREIGN_NAMESPACE_FORBIDDEN", node_namespace or "missing")
     if root.attrib.get("role") != "img":
         reject("SVG_ROLE_REQUIRED", 'root role must be "img"')
 
@@ -71,23 +92,19 @@ def validate_svg(path: Path) -> None:
     if not set(labelled).issubset(ids):
         reject("SVG_ARIA_TARGET_MISSING", "aria-labelledby ids not found")
 
-    titles = [n for n in root.iter() if local_name(n.tag) == "title" and (n.text or "").strip()]
-    descs = [n for n in root.iter() if local_name(n.tag) == "desc" and (n.text or "").strip()]
+    titles = [n for n in root.iter() if namespace(n.tag) == SVG_NS and local_name(n.tag) == "title" and (n.text or "").strip()]
+    descs = [n for n in root.iter() if namespace(n.tag) == SVG_NS and local_name(n.tag) == "desc" and (n.text or "").strip()]
     if not titles or not descs:
         reject("SVG_ACCESSIBLE_TEXT_REQUIRED", "non-empty title and desc required")
 
     for node in root.iter():
         name = local_name(node.tag)
         node_namespace = namespace(node.tag)
-        if node_namespace == XINCLUDE:
-            reject("SVG_XINCLUDE_FORBIDDEN", "XInclude namespace is not allowed")
-        if node_namespace not in {"", SVG_NS}:
-            reject("SVG_FOREIGN_NAMESPACE_FORBIDDEN", node_namespace)
         if name in FORBIDDEN_ELEMENTS:
             reject("SVG_ACTIVE_OR_FOREIGN_CONTENT", name)
         for attr, value in node.attrib.items():
             attr_name = local_name(attr).lower()
-            text = str(value).strip().lower()
+            text = decode_css_escapes(str(value).strip().lower())
             for code, pattern in RAW_PATTERNS.items():
                 if code != "SVG_DTD_FORBIDDEN" and pattern.search(text):
                     reject(code, str(value))
@@ -98,7 +115,7 @@ def validate_svg(path: Path) -> None:
                 reject("SVG_XML_BASE_FORBIDDEN", str(value))
             if attr_name in {"href", "src"} and not text.startswith("#"):
                 reject("SVG_EXTERNAL_REFERENCE_FORBIDDEN", str(value))
-        text_content = (node.text or "") + (node.tail or "")
+        text_content = decode_css_escapes((node.text or "") + (node.tail or ""))
         for code, pattern in RAW_PATTERNS.items():
             if code not in {"SVG_DTD_FORBIDDEN", "SVG_PROCESSING_INSTRUCTION_FORBIDDEN"} and pattern.search(text_content):
                 reject(code, text_content.strip())
