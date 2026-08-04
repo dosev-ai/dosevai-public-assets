@@ -22,16 +22,29 @@ python scripts/asset_manifest.py validate repaired.manifest.yaml --asset figure.
 python scripts/asset_manifest.py inspect repaired.manifest.yaml
 python scripts/asset_manifest.py generate metadata.yaml --output figure.manifest.yaml --asset figure.svg
 
-# Audit every production package under posts/, social/, diagrams/, and shared/.
-python scripts/asset_manifest.py audit --root . --format json --output asset-audit.json
+# Audit production packages and bind provenance to this canonical repository.
+python scripts/asset_manifest.py audit \
+  --root . \
+  --expected-repository dosev-ai/dosevai-public-assets \
+  --format json \
+  --output asset-audit.json
 
-# Exploratory inventory only. This preserves findings but does not fail the command.
+# During a bounded migration, defer only formats whose typed profile is inactive.
+python scripts/asset_manifest.py audit \
+  --root . \
+  --expected-repository dosev-ai/dosevai-public-assets \
+  --allow-status unsupported_profile \
+  --format text
+
+# Exploratory inventory only. This reports all findings without certifying the tree.
 python scripts/asset_manifest.py audit --root . --format text --allow-findings
 ```
 
 `validate`, `normalize`, and `generate` require the real asset bytes. `inspect` is metadata-only and does not certify a package.
 
-`audit` discovers supported assets and adjacent manifests, validates actual bytes, and returns deterministic classifications: `pass`, `repair`, `missing_manifest`, `orphan_manifest`, `unsupported_profile`, or `unsafe`. It fails with a non-zero exit code when findings exist unless `--allow-findings` is explicitly supplied for a non-certifying inventory pass.
+`audit` discovers assets and adjacent manifests under `posts/`, `social/`, `diagrams`, and `shared` by default. It validates actual bytes, full repository-relative source paths, optional expected repository identity, SHA-256 evidence, symlink safety, and deterministic package pairing. Results use these classifications: `pass`, `repair`, `missing_manifest`, `orphan_manifest`, `unsupported_profile`, or `unsafe`.
+
+The command fails when any blocking finding exists. `--allow-status` may defer only explicitly named finding classes while all other classes remain blocking. `--allow-findings` is a non-certifying exploratory mode and must not be used as the steady-state required check after migration.
 
 Normalization is fail-closed. Duplicate YAML keys, unknown fields, unsupported public-safety values, wrong scalar types, unsafe paths, MIME mismatches, checksum mismatches, scripts, external resources, inaccessible SVGs, XInclude, foreign namespaces, animation, and active or foreign SVG content return machine-readable error codes.
 
