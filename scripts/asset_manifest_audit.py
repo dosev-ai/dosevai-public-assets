@@ -25,6 +25,13 @@ UNSAFE_CODES = {
     "SVG_EVENT_HANDLER_FORBIDDEN",
     "SVG_XML_BASE_FORBIDDEN",
     "SVG_EXTERNAL_REFERENCE_FORBIDDEN",
+    "PDF_ENCRYPTION_FORBIDDEN",
+    "PDF_ACTIVE_CONTENT_FORBIDDEN",
+    "PDF_INTERACTIVE_FORM_FORBIDDEN",
+    "PDF_EMBEDDED_OBJECTS_FORBIDDEN",
+    "PDF_JAVASCRIPT_FORBIDDEN",
+    "PDF_ANNOTATIONS_FORBIDDEN",
+    "PDF_PRIVATE_NOTES_REMOVAL_REQUIRED",
 }
 
 
@@ -69,7 +76,9 @@ def _item(
         ],
     }
     if manifest:
-        for key in ("asset_id", "content_id", "profile", "role", "source_path", "mime_type", "sha256"):
+        for key in (
+            "asset_id", "content_id", "profile", "role", "source_path", "mime_type", "sha256", "page_count",
+        ):
             if key in manifest:
                 result[key] = manifest[key]
     return result
