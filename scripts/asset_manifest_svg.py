@@ -15,6 +15,7 @@ RAW_PATTERNS = {
     "SVG_CSS_IMPORT_FORBIDDEN": re.compile(r"@import\b", re.I),
     "SVG_EXTERNAL_CSS_URL_FORBIDDEN": re.compile(r"url\(\s*['\"]?(?:https?:|//|data:|javascript:)", re.I),
 }
+CSS_URL_PATTERN = re.compile(r"url\(\s*['\"]?([^'\")\s]+)", re.I)
 
 
 class SvgValidationError(ValueError):
@@ -34,6 +35,13 @@ def local_name(tag: str) -> str:
 
 def namespace(tag: str) -> str:
     return tag[1:].split("}", 1)[0] if tag.startswith("{") else ""
+
+
+def reject_non_fragment_css_urls(text: str) -> None:
+    for match in CSS_URL_PATTERN.finditer(text):
+        target = match.group(1).strip()
+        if not target.startswith("#"):
+            reject("SVG_EXTERNAL_CSS_URL_FORBIDDEN", target)
 
 
 def validate_svg(path: Path) -> None:
@@ -83,15 +91,15 @@ def validate_svg(path: Path) -> None:
             for code, pattern in RAW_PATTERNS.items():
                 if code != "SVG_DTD_FORBIDDEN" and pattern.search(text):
                     reject(code, str(value))
+            reject_non_fragment_css_urls(text)
             if attr_name.startswith("on"):
                 reject("SVG_EVENT_HANDLER_FORBIDDEN", attr_name)
             if attr_name == "base" and attr.startswith("{http://www.w3.org/XML/1998/namespace}"):
                 reject("SVG_XML_BASE_FORBIDDEN", str(value))
-            if attr_name in {"href", "src"} and (
-                text.startswith(("http:", "https:", "javascript:", "data:", "//"))
-            ):
+            if attr_name in {"href", "src"} and not text.startswith("#"):
                 reject("SVG_EXTERNAL_REFERENCE_FORBIDDEN", str(value))
         text_content = (node.text or "") + (node.tail or "")
         for code, pattern in RAW_PATTERNS.items():
             if code not in {"SVG_DTD_FORBIDDEN", "SVG_PROCESSING_INSTRUCTION_FORBIDDEN"} and pattern.search(text_content):
                 reject(code, text_content.strip())
+        reject_non_fragment_css_urls(text_content)

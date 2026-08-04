@@ -96,7 +96,7 @@ class AssetManifestTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         text = output.read_text(encoding="utf-8").replace("schema_version: 1", "schema_version: true")
         output.write_text(text, encoding="utf-8")
-        validated = self.run_cli("validate", str(output))
+        validated = self.run_cli("validate", str(output), "--asset", str(Path(directory.name) / "figure.svg"))
         self.assertEqual(validated.returncode, 2)
         self.assertIn("INVALID_FIELD_TYPE", validated.stderr)
 
@@ -116,6 +116,74 @@ class AssetManifestTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         self.assertEqual(result.returncode, 2)
         self.assertIn("SVG_XINCLUDE_FORBIDDEN", result.stderr)
+
+    def test_rejects_relative_href_reference(self) -> None:
+        unsafe = SVG.replace("</svg>", '<use href="other.svg#thing"/></svg>')
+        result, _, directory = self.normalize(svg_text=unsafe)
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("SVG_EXTERNAL_REFERENCE_FORBIDDEN", result.stderr)
+
+    def test_rejects_relative_css_url(self) -> None:
+        unsafe = SVG.replace("<rect", '<rect style="fill:url(image.png)"')
+        result, _, directory = self.normalize(svg_text=unsafe)
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("SVG_EXTERNAL_CSS_URL_FORBIDDEN", result.stderr)
+
+    def test_rejects_encoded_css_import(self) -> None:
+        unsafe = SVG.replace("</svg>", '<style>@im&#x70;ort url(&#x68;ttps://example.com/x.css)</style></svg>')
+        result, _, directory = self.normalize(svg_text=unsafe)
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("SVG_CSS_IMPORT_FORBIDDEN", result.stderr)
+
+    def test_parses_false_like_guide_eligibility(self) -> None:
+        result, output, directory = self.normalize(LEGACY.replace("guide_eligible: true", 'guide_eligible: "false"'))
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = yaml.safe_load(output.read_text(encoding="utf-8"))
+        self.assertFalse(data["guide_eligible"])
+
+    def test_validate_requires_asset(self) -> None:
+        result, output, directory = self.normalize()
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        validated = self.run_cli("validate", str(output))
+        self.assertEqual(validated.returncode, 2)
+        self.assertIn("--asset", validated.stderr)
+
+    def test_rejects_unsupported_image_format(self) -> None:
+        result, output, directory = self.normalize()
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        temp = Path(directory.name)
+        data = yaml.safe_load(output.read_text(encoding="utf-8"))
+        data.pop("sha256", None)
+        data["source_path"] = "posts/test/payload.html"
+        data["mime_type"] = "text/html"
+        output.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+        payload = temp / "payload.html"
+        payload.write_text("<script>alert(1)</script>", encoding="utf-8")
+        validated = self.run_cli("validate", str(output), "--asset", str(payload))
+        self.assertEqual(validated.returncode, 2)
+        self.assertIn("UNSUPPORTED_IMAGE_FORMAT", validated.stderr)
+
+    def test_rejects_invalid_raster_signature(self) -> None:
+        result, output, directory = self.normalize()
+        self.addCleanup(directory.cleanup)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        temp = Path(directory.name)
+        data = yaml.safe_load(output.read_text(encoding="utf-8"))
+        data.pop("sha256", None)
+        data["source_path"] = "posts/test/payload.png"
+        data["mime_type"] = "image/png"
+        output.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+        payload = temp / "payload.png"
+        payload.write_text("<script>alert(1)</script>", encoding="utf-8")
+        validated = self.run_cli("validate", str(output), "--asset", str(payload))
+        self.assertEqual(validated.returncode, 2)
+        self.assertIn("IMAGE_SIGNATURE_MISMATCH", validated.stderr)
 
 
 if __name__ == "__main__":

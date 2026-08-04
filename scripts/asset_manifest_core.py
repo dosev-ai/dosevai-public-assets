@@ -140,6 +140,20 @@ def _matches_type(value: Any, expected: type | tuple[type, ...]) -> bool:
     return isinstance(value, expected)
 
 
+def validate_raster_signature(path: Path, mime_type: str) -> None:
+    try:
+        head = path.read_bytes()[:16]
+    except FileNotFoundError:
+        fail("ASSET_NOT_FOUND", str(path))
+    valid = (
+        (mime_type == "image/png" and head.startswith(b"\x89PNG\r\n\x1a\n"))
+        or (mime_type == "image/jpeg" and head.startswith(b"\xff\xd8\xff"))
+        or (mime_type == "image/webp" and len(head) >= 12 and head[:4] == b"RIFF" and head[8:12] == b"WEBP")
+    )
+    if not valid:
+        fail("IMAGE_SIGNATURE_MISMATCH", f"{path.name} does not match {mime_type}")
+
+
 def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[str, Any]:
     unknown = sorted(set(data) - ALLOWED_KEYS)
     if unknown:
@@ -176,8 +190,11 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
     source_path = safe_path(data["source_path"])
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", data["source_repository"]) or ".." in data["source_repository"].split("/"):
         fail("INVALID_SOURCE_REPOSITORY", data["source_repository"])
-    expected_mime = MIME_BY_SUFFIX.get(PurePosixPath(source_path).suffix.lower())
-    if expected_mime and data["mime_type"] != expected_mime:
+    suffix = PurePosixPath(source_path).suffix.lower()
+    expected_mime = MIME_BY_SUFFIX.get(suffix)
+    if data["profile"] == "image" and expected_mime is None:
+        fail("UNSUPPORTED_IMAGE_FORMAT", suffix or "missing suffix")
+    if data["mime_type"] != expected_mime:
         fail("MIME_PATH_MISMATCH", f"{data['mime_type']} != {expected_mime}")
     checksum = data.get("sha256")
     if checksum is not None and not re.fullmatch(r"[0-9a-f]{64}", str(checksum)):
@@ -194,6 +211,8 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
                 validate_svg(asset)
             except SvgValidationError as exc:
                 fail(exc.code, exc.message)
+        else:
+            validate_raster_signature(asset, data["mime_type"])
     return data
 
 
@@ -233,7 +252,7 @@ def normalize_legacy(
         "alt": alt, "caption": legacy.get("caption"), "semantic_description": legacy.get("semantic_description"),
         "claims": legacy.get("claims"), "boundaries": legacy.get("boundaries"), "audience": legacy.get("audience"),
         "creation_method": legacy.get("creation_method"), "contributor": contributor, "license": license_id,
-        "public_safe": True, "guide_eligible": bool(legacy.get("guide_eligible", False)),
+        "public_safe": True, "guide_eligible": legacy_bool(legacy.get("guide_eligible"), "guide_eligible"),
         "external_resources": legacy_bool(legacy.get("external_resources"), "external_resources"),
         "scripts": legacy_bool(legacy.get("scripts"), "scripts"),
         "remote_fonts": legacy_bool(legacy.get("remote_fonts"), "remote_fonts"), "created_at": created_at,

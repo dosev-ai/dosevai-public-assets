@@ -12,17 +12,19 @@ from asset_manifest_core import (
 )
 
 
-def common(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--asset", type=Path)
+def add_asset(parser: argparse.ArgumentParser, *, required: bool) -> None:
+    parser.add_argument("--asset", type=Path, required=required)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="asset_manifest.py")
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("validate", "inspect"):
-        item = commands.add_parser(name)
-        item.add_argument("manifest", type=Path)
-        common(item)
+    validate = commands.add_parser("validate")
+    validate.add_argument("manifest", type=Path)
+    add_asset(validate, required=True)
+    inspect = commands.add_parser("inspect")
+    inspect.add_argument("manifest", type=Path)
+    add_asset(inspect, required=False)
     normalize = commands.add_parser("normalize")
     normalize.add_argument("manifest", type=Path)
     normalize.add_argument("--output", type=Path, required=True)
@@ -33,11 +35,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     normalize.add_argument("--sequence", type=int, default=0)
     normalize.add_argument("--section-anchor")
     normalize.add_argument("--step-key")
-    common(normalize)
+    add_asset(normalize, required=True)
     generate = commands.add_parser("generate")
     generate.add_argument("metadata", type=Path)
     generate.add_argument("--output", type=Path, required=True)
-    common(generate)
+    add_asset(generate, required=True)
     return parser.parse_args(argv)
 
 

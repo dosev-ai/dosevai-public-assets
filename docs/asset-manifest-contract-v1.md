@@ -4,7 +4,7 @@ This repository uses one deterministic packager entry point for asset manifests.
 
 ## Core fields
 
-`schema_version`, `profile`, `asset_id`, `content_id`, `source_class`, `project`, `source_repository`, `source_path`, `mime_type`, `role`, `alt`, `caption`, `semantic_description`, `claims`, `boundaries`, `creation_method`, `contributor`, `license`, `public_safe`, `guide_eligible`, `external_resources`, and `scripts`.
+`schema_version`, `profile`, `asset_id`, `content_id`, `source_class`, `project`, `source_repository`, `source_path`, `mime_type`, `sha256`, `role`, `alt`, `caption`, `semantic_description`, `claims`, `boundaries`, `creation_method`, `contributor`, `license`, `public_safe`, `guide_eligible`, `external_resources`, `scripts`, and profile-specific safety fields such as `remote_fonts`.
 
 The image profile retains `visual_id` as a compatibility field and requires it to equal `asset_id` in schema v1.
 
@@ -18,6 +18,7 @@ python scripts/asset_manifest.py normalize legacy.manifest.yaml \
 
 python scripts/asset_manifest.py validate repaired.manifest.yaml --asset figure.svg
 python scripts/asset_manifest.py inspect repaired.manifest.yaml
+# validate, normalize, and generate require --asset; inspect is metadata-only.
 python scripts/asset_manifest.py generate metadata.yaml --output figure.manifest.yaml --asset figure.svg
 ```
 
