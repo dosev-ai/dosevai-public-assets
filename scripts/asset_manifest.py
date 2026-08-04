@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate, normalize, inspect, and validate governed asset manifests."""
+"""Generate, normalize, inspect, validate, and audit governed asset manifests."""
 from __future__ import annotations
 
 import argparse
@@ -7,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 
+from asset_manifest_audit import audit_repository, format_audit_text
 from asset_manifest_core import (
     ManifestError, canonical, dump_manifest, load_mapping, normalize_legacy, sha256, validate_manifest,
 )
@@ -40,12 +41,26 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     generate.add_argument("metadata", type=Path)
     generate.add_argument("--output", type=Path, required=True)
     add_asset(generate, required=True)
+    audit = commands.add_parser("audit")
+    audit.add_argument("--root", type=Path, default=Path("."))
+    audit.add_argument("--include", action="append", dest="include_roots")
+    audit.add_argument("--format", choices=("json", "text"), default="json")
+    audit.add_argument("--output", type=Path)
+    audit.add_argument("--allow-findings", action="store_true")
     return parser.parse_args(argv)
 
 
 def write_output(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(dump_manifest(data), encoding="utf-8")
+
+
+def emit_audit(args: argparse.Namespace, report: dict) -> None:
+    rendered = json.dumps(report, indent=2, sort_keys=True) if args.format == "json" else format_audit_text(report)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -67,6 +82,10 @@ def main(argv: list[str] | None = None) -> int:
             )
             write_output(args.output, data)
             print(json.dumps({"ok": True, "output": str(args.output), "asset_id": data["asset_id"]}, sort_keys=True))
+        elif args.command == "audit":
+            report = audit_repository(args.root, args.include_roots)
+            emit_audit(args, report)
+            return 0 if report["ok"] or args.allow_findings else 2
         else:
             data = load_mapping(args.metadata)
             if args.asset is not None:
