@@ -1,0 +1,36 @@
+visual_id: corporate-agent-harness-authority-ladder-v1
+repository: dosev-ai/dosevai-public-assets
+path: posts/corporate-agent-harness/authority-ladder.svg
+role: inline
+target_content:
+  type: post
+  slug: post:corporate-agent-harness
+title: "The authority ladder"
+alt_text: "Four levels of agent delegation from Assist to Optimize, with progressively stronger controls for access, evidence, approval, execution and monitoring."
+caption: "Agent governance should strengthen as authority progresses from assistance to recommendation, execution and optimization."
+semantic_description: >-
+  Four stacked rows show the authority levels Assist, Recommend, Execute and Optimize.
+  Each row states what the agent does and the required control posture. A vertical rail
+  changes from blue to orange as authority and governance requirements increase.
+claims:
+  - Agent delegation spans materially different levels of authority.
+  - Control requirements should become stronger as agent authority increases.
+  - Assist, Recommend, Execute and Optimize require distinct decision and control postures.
+boundaries:
+  - Conceptual operating-model illustration; not evidence of a deployed enterprise platform.
+  - The listed controls are illustrative and not sufficient for every jurisdiction, process or risk class.
+  - No confidential systems, employer data, internal identifiers or unsupported metrics.
+audience:
+  - CEO
+  - CFO
+  - CPO
+  - CIO
+  - audit and risk leaders
+creation_method: deterministic self-contained SVG based on an owner-approved visual concept
+rights: Original visual created for dosevai.com; repository owner retains rights.
+public_safety: approved-for-publication
+external_resources: none
+scripts: none
+remote_fonts: none
+guide_eligible: true
+created_at: 2026-08-02

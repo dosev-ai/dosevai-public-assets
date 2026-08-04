@@ -1,0 +1,34 @@
+# Governed asset manifest contract v1
+
+This repository uses one deterministic packager entry point for asset manifests. The first executable profile is `image`; audio, PDF, and PPTX must extend the same normalized core instead of creating independent generators.
+
+## Core fields
+
+`schema_version`, `profile`, `asset_id`, `content_id`, `source_class`, `project`, `source_repository`, `source_path`, `mime_type`, `sha256`, `role`, `alt`, `caption`, `semantic_description`, `claims`, `boundaries`, `creation_method`, `contributor`, `license`, `public_safe`, `guide_eligible`, `external_resources`, `scripts`, and profile-specific safety fields such as `remote_fonts`.
+
+The image profile retains `visual_id` as a compatibility field and requires it to equal `asset_id` in schema v1.
+
+## Commands
+
+```bash
+python scripts/asset_manifest.py normalize legacy.manifest.yaml \
+  --output repaired.manifest.yaml \
+  --project personal-operating-system \
+  --contributor "OpenAI ChatGPT with Delyan Dosev direction" \
+  --license CC0-1.0
+
+python scripts/asset_manifest.py validate repaired.manifest.yaml --asset figure.svg
+python scripts/asset_manifest.py inspect repaired.manifest.yaml
+# validate, normalize, and generate require --asset; inspect is metadata-only.
+python scripts/asset_manifest.py generate metadata.yaml --output figure.manifest.yaml --asset figure.svg
+```
+
+Normalization is fail-closed. Duplicate YAML keys, unknown fields, unsupported public-safety values, wrong scalar types, unsafe paths, MIME mismatches, checksum mismatches, scripts, external resources, inaccessible SVGs, XInclude, foreign namespaces, animation, and active or foreign SVG content return machine-readable error codes.
+
+## Ownership boundary
+
+Producer skills create the asset and supply explicit semantic metadata. The packager owns field mapping, serialization, checksums, validation, and normalized output. Publishing skills and application code consume the normalized result and must not reproduce the core field list independently.
+
+## Legacy licence boundary
+
+Legacy prose `rights` cannot be translated automatically into a machine-readable license. `normalize` requires an explicit `--license`; omission fails with `LEGACY_LICENSE_MAPPING_REQUIRED`. The caller must verify repository policy and may not infer CC0 or another licence from prose rights.

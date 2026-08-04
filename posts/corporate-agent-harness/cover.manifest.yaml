@@ -1,18 +1,22 @@
+schema_version: 1
+profile: image
+asset_id: corporate-agent-harness-cover-v1
 visual_id: corporate-agent-harness-cover-v1
-repository: dosev-ai/dosevai-public-assets
-path: posts/corporate-agent-harness/cover.svg
-role: cover
-target_content:
-  type: post
-  slug: post:corporate-agent-harness
-title: "Before Agents Execute: The Corporate Agent Harness"
-alt_text: "A dark navy executive diagram showing an AI agent contained by identity, authority, policy, validation, approval, evidence and rollback controls before reaching business systems."
-caption: "The corporate harness constrains agent capability through identity, authority, policy, validation, approval and rollback before material business execution."
+content_id: post:corporate-agent-harness
+source_class: project_owned
+project: personal-operating-system
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/corporate-agent-harness/cover.svg
+mime_type: image/svg+xml
+role: explanatory_cover
+section_anchor: null
+sequence: 0
+step_key: corporate-agent-harness-cover
+title: 'Before Agents Execute: The Corporate Agent Harness'
+alt: A dark navy executive diagram showing an AI agent contained by identity, authority, policy, validation, approval, evidence and rollback controls before reaching business systems.
+caption: The corporate harness constrains agent capability through identity, authority, policy, validation, approval and rollback before material business execution.
 semantic_description: >-
-  An executive-level flow from an AI agent, through a corporate harness, to business systems.
-  The harness contains six visible controls: identity, authority, policy, validation, approval and rollback.
-  A lower authority ladder progresses from Assist to Recommend to Execute to Optimize, with controls
-  strengthening as the agent receives more authority.
+  An executive-level flow from an AI agent, through a corporate harness, to business systems. The harness contains six visible controls: identity, authority, policy, validation, approval and rollback. A lower authority ladder progresses from Assist to Recommend to Execute to Optimize, with controls strengthening as the agent receives more authority.
 claims:
   - Agent capability and agent authority are separate design concerns.
   - Material execution requires stronger identity, authorization, validation, approval, evidence and reversal controls.
@@ -28,10 +32,11 @@ audience:
   - CIO
   - audit and risk leaders
 creation_method: deterministic self-contained SVG
-rights: Original visual created for dosevai.com; repository owner retains rights.
-public_safety: approved-for-review
-external_resources: none
-scripts: none
-remote_fonts: none
+contributor: OpenAI ChatGPT with Delyan Dosev direction
+license: CC0-1.0
+public_safe: true
 guide_eligible: true
-created_at: 2026-08-02
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: '2026-08-02'
