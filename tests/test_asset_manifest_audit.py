@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -16,7 +17,13 @@ from asset_manifest_audit import audit_repository  # noqa: E402
 VALID_SVG = """<svg xmlns=\"http://www.w3.org/2000/svg\" role=\"img\" aria-labelledby=\"title desc\"><title id=\"title\">Title</title><desc id=\"desc\">Description</desc><rect width=\"10\" height=\"10\"/></svg>"""
 
 
-def manifest_text(*, asset_id: str = "sample", profile: str = "image", scripts: bool = False) -> str:
+def manifest_text(
+    *,
+    asset_id: str = "sample",
+    profile: str = "image",
+    scripts: bool = False,
+    source_path: str = "posts/sample/cover.svg",
+) -> str:
     return f"""schema_version: 1
 profile: {profile}
 asset_id: {asset_id}
@@ -25,7 +32,7 @@ content_id: post:sample
 source_class: project_owned
 project: test
 source_repository: example/assets
-source_path: posts/sample/cover.svg
+source_path: {source_path}
 mime_type: image/svg+xml
 role: explanatory_cover
 alt: Sample alt
@@ -63,6 +70,18 @@ class AuditTests(unittest.TestCase):
             self.assertEqual(report["summary"], {"pass": 1})
             self.assertEqual(report["items"][0]["code"], "PACKAGE_VALID")
 
+    def test_source_path_must_match_actual_repository_path(self) -> None:
+        with self.make_repo() as directory:
+            root = Path(directory)
+            package = root / "posts" / "sample"
+            (package / "cover.svg").write_text(VALID_SVG, encoding="utf-8")
+            (package / "cover.manifest.yaml").write_text(
+                manifest_text(source_path="posts/other/cover.svg"), encoding="utf-8"
+            )
+            report = audit_repository(root)
+            self.assertEqual(report["items"][0]["status"], "repair")
+            self.assertEqual(report["items"][0]["code"], "ASSET_SOURCE_PATH_MISMATCH")
+
     def test_missing_and_orphan_are_distinct(self) -> None:
         with self.make_repo() as directory:
             root = Path(directory)
@@ -73,6 +92,16 @@ class AuditTests(unittest.TestCase):
             self.assertFalse(report["ok"])
             self.assertEqual(report["summary"], {"missing_manifest": 1, "orphan_manifest": 1})
 
+    def test_unsupported_adjacent_asset_is_not_called_orphan(self) -> None:
+        with self.make_repo() as directory:
+            root = Path(directory)
+            package = root / "posts" / "sample"
+            (package / "companion.pdf").write_bytes(b"%PDF-1.7\n")
+            (package / "companion.manifest.yaml").write_text("profile: document_pdf\n", encoding="utf-8")
+            report = audit_repository(root)
+            self.assertEqual(report["summary"], {"unsupported_profile": 1})
+            self.assertEqual(report["items"][0]["code"], "UNSUPPORTED_ASSET_FORMAT")
+
     def test_unsafe_manifest_is_classified(self) -> None:
         with self.make_repo() as directory:
             root = Path(directory)
@@ -82,6 +111,22 @@ class AuditTests(unittest.TestCase):
             report = audit_repository(root)
             self.assertEqual(report["items"][0]["status"], "unsafe")
             self.assertEqual(report["items"][0]["code"], "UNSAFE_RESOURCE_FLAGS")
+
+    def test_symlinked_package_member_is_unsafe(self) -> None:
+        if not hasattr(os, "symlink"):
+            self.skipTest("symlinks unavailable")
+        with self.make_repo() as directory:
+            root = Path(directory)
+            package = root / "posts" / "sample"
+            target = root / "outside.svg"
+            target.write_text(VALID_SVG, encoding="utf-8")
+            try:
+                (package / "cover.svg").symlink_to(target)
+            except OSError as exc:
+                self.skipTest(f"symlink unavailable: {exc}")
+            report = audit_repository(root)
+            self.assertEqual(report["summary"], {"unsafe": 1})
+            self.assertEqual(report["items"][0]["code"], "SYMLINK_FORBIDDEN")
 
     def test_unsupported_profile_is_classified(self) -> None:
         with self.make_repo() as directory:
@@ -104,6 +149,23 @@ class AuditTests(unittest.TestCase):
             self.assertEqual(report["summary"], {"repair": 1})
             self.assertEqual(report["items"][0]["code"], "AMBIGUOUS_ASSET_VARIANTS")
             self.assertEqual(len(report["items"][0]["assets"]), 2)
+
+    def test_duplicate_include_roots_do_not_duplicate_packages(self) -> None:
+        with self.make_repo() as directory:
+            root = Path(directory)
+            package = root / "posts" / "sample"
+            (package / "cover.svg").write_text(VALID_SVG, encoding="utf-8")
+            (package / "cover.manifest.yaml").write_text(manifest_text(), encoding="utf-8")
+            report = audit_repository(root, ["posts", "posts"])
+            self.assertEqual(report["package_count"], 1)
+            self.assertEqual(report["summary"], {"pass": 1})
+
+    def test_empty_selected_root_fails_closed(self) -> None:
+        with self.make_repo() as directory:
+            root = Path(directory)
+            report = audit_repository(root)
+            self.assertFalse(report["ok"])
+            self.assertEqual(report["items"][0]["code"], "NO_ASSET_PACKAGES")
 
     def test_cli_fails_on_findings_and_can_emit_report(self) -> None:
         with self.make_repo() as directory:
