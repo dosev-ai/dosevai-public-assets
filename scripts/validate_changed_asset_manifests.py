@@ -14,18 +14,52 @@ ASSET_SUFFIXES = {".svg", ".png", ".jpg", ".jpeg", ".webp", ".mp3", ".wav", ".m4
 MANIFEST_SUFFIX = ".manifest.yaml"
 
 
+def _unique_paths(paths: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for path in paths:
+        if path and path not in seen:
+            seen.add(path)
+            result.append(path)
+    return result
+
+
+def _parse_name_status(output: str) -> list[str]:
+    paths: list[str] = []
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        fields = line.split("\t")
+        status = fields[0]
+        if status.startswith(("R", "C")):
+            if len(fields) != 3:
+                raise ManifestError("GIT_DIFF_PARSE_FAILED", line)
+            paths.extend(fields[1:3])
+        else:
+            if len(fields) != 2:
+                raise ManifestError("GIT_DIFF_PARSE_FAILED", line)
+            paths.append(fields[1])
+    return _unique_paths(paths)
+
+
 def changed_paths(repo_root: Path, base: str) -> list[str]:
     if not base or set(base) == {"0"}:
-        return [path.relative_to(repo_root).as_posix() for path in repo_root.glob("posts/**/*.manifest.yaml")]
+        candidates = [
+            path.relative_to(repo_root).as_posix()
+            for path in repo_root.glob("posts/**/*")
+            if path.is_file() and (path.name.endswith(MANIFEST_SUFFIX) or path.suffix.lower() in ASSET_SUFFIXES)
+        ]
+        return sorted(candidates)
     commands = (
-        ["git", "diff", "--name-only", "--diff-filter=ACMRD", f"{base}...HEAD"],
-        ["git", "diff", "--name-only", "--diff-filter=ACMRD", base, "HEAD"],
+        ["git", "diff", "--name-status", "--find-renames", "--diff-filter=ACMRD", f"{base}...HEAD"],
+        ["git", "diff", "--name-status", "--find-renames", "--diff-filter=ACMRD", base, "HEAD"],
     )
+    result: subprocess.CompletedProcess[str] | None = None
     for command in commands:
         result = subprocess.run(command, cwd=repo_root, text=True, capture_output=True, check=False)
         if result.returncode == 0:
-            return [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    raise ManifestError("GIT_DIFF_FAILED", result.stderr.strip() or base)
+            return _parse_name_status(result.stdout)
+    raise ManifestError("GIT_DIFF_FAILED", (result.stderr.strip() if result else "") or base)
 
 
 def manifest_for_asset(asset: Path) -> Path:
@@ -91,7 +125,31 @@ def expected_adjacent_source(repo_root: Path, manifest: Path, source_path: str) 
     return actual
 
 
+def _validate_changed_asset_binding(repo_root: Path, paths: list[str]) -> None:
+    for raw in paths:
+        rel = PurePosixPath(raw)
+        if not rel.parts or rel.parts[0] != "posts" or rel.suffix.lower() not in ASSET_SUFFIXES:
+            continue
+        asset = repo_root.joinpath(*rel.parts)
+        if not asset.exists():
+            continue
+        manifest = manifest_for_asset(asset)
+        if not manifest.exists():
+            raise ManifestError("ADJACENT_MANIFEST_REQUIRED", manifest.relative_to(repo_root).as_posix())
+        data = load_mapping(manifest)
+        source_path = data.get("source_path")
+        actual_path = asset.relative_to(repo_root).as_posix()
+        if not isinstance(source_path, str):
+            raise ManifestError("MISSING_FIELD", f"{manifest}: source_path")
+        if source_path != actual_path:
+            raise ManifestError(
+                "CHANGED_ASSET_NOT_MANIFEST_SOURCE",
+                f"{actual_path} != {source_path}",
+            )
+
+
 def validate_paths(repo_root: Path, paths: list[str]) -> list[dict[str, str]]:
+    _validate_changed_asset_binding(repo_root, paths)
     results: list[dict[str, str]] = []
     for manifest in manifests_for_paths(repo_root, paths):
         data = load_mapping(manifest)

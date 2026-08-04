@@ -8,6 +8,7 @@ import re
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from PIL import Image, UnidentifiedImageError
 import yaml
 from yaml.constructor import ConstructorError
 
@@ -39,6 +40,7 @@ REQUIRED = {
 }
 ROLE_MAP = {"cover": "explanatory_cover", "inline": "explanatory_inline", "gallery": "gallery_item"}
 MIME_BY_SUFFIX = {".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+PIL_FORMAT_BY_MIME = {"image/png": "PNG", "image/jpeg": "JPEG", "image/webp": "WEBP"}
 OPTIONAL_TYPES = {
     "visual_id": str, "sha256": str, "role": str, "section_anchor": (str, type(None)), "sequence": int,
     "step_key": str, "title": str, "audience": list, "remote_fonts": bool, "created_at": str,
@@ -142,18 +144,26 @@ def _matches_type(value: Any, expected: type | tuple[type, ...]) -> bool:
     return isinstance(value, expected)
 
 
-def validate_raster_signature(path: Path, mime_type: str) -> None:
+def validate_raster_image(path: Path, mime_type: str) -> None:
+    expected_format = PIL_FORMAT_BY_MIME.get(mime_type)
+    if expected_format is None:
+        fail("UNSUPPORTED_IMAGE_MIME", mime_type)
     try:
-        head = path.read_bytes()[:16]
+        with Image.open(path) as image:
+            detected_format = image.format
+            image.verify()
+        with Image.open(path) as image:
+            image.load()
+            width, height = image.size
+            detected_format = image.format or detected_format
     except FileNotFoundError:
         fail("ASSET_NOT_FOUND", str(path))
-    valid = (
-        (mime_type == "image/png" and head.startswith(b"\x89PNG\r\n\x1a\n"))
-        or (mime_type == "image/jpeg" and head.startswith(b"\xff\xd8\xff"))
-        or (mime_type == "image/webp" and len(head) >= 12 and head[:4] == b"RIFF" and head[8:12] == b"WEBP")
-    )
-    if not valid:
-        fail("IMAGE_SIGNATURE_MISMATCH", f"{path.name} does not match {mime_type}")
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
+        fail("IMAGE_DECODE_FAILED", f"{path.name}: {exc}")
+    if detected_format != expected_format:
+        fail("IMAGE_SIGNATURE_MISMATCH", f"{path.name}: {detected_format} != {expected_format}")
+    if width <= 0 or height <= 0:
+        fail("IMAGE_DIMENSIONS_INVALID", f"{path.name}: {width}x{height}")
 
 
 def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[str, Any]:
@@ -214,7 +224,7 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
             except SvgValidationError as exc:
                 fail(exc.code, exc.message)
         else:
-            validate_raster_signature(asset, data["mime_type"])
+            validate_raster_image(asset, data["mime_type"])
     return data
 
 

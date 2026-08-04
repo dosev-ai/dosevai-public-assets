@@ -88,18 +88,42 @@ def validate_svg(path: Path) -> None:
     labelled = root.attrib.get("aria-labelledby", "").split()
     if len(labelled) < 2:
         reject("SVG_ARIA_LABELLEDBY_REQUIRED", "title and desc ids required")
-    ids = {node.attrib.get("id") for node in root.iter() if node.attrib.get("id")}
-    if not set(labelled).issubset(ids):
+    if len(labelled) != len(set(labelled)):
+        reject("SVG_ARIA_LABELLEDBY_DUPLICATE", "aria-labelledby ids must be unique")
+
+    id_nodes: dict[str, ET.Element] = {}
+    for node in root.iter():
+        node_id = node.attrib.get("id")
+        if not node_id:
+            continue
+        if node_id in id_nodes:
+            reject("SVG_DUPLICATE_ID_FORBIDDEN", node_id)
+        id_nodes[node_id] = node
+    if not set(labelled).issubset(id_nodes):
         reject("SVG_ARIA_TARGET_MISSING", "aria-labelledby ids not found")
 
-    titles = [n for n in root.iter() if namespace(n.tag) == SVG_NS and local_name(n.tag) == "title" and (n.text or "").strip()]
-    descs = [n for n in root.iter() if namespace(n.tag) == SVG_NS and local_name(n.tag) == "desc" and (n.text or "").strip()]
+    titles = [
+        node for node in root.iter()
+        if namespace(node.tag) == SVG_NS and local_name(node.tag) == "title" and (node.text or "").strip()
+    ]
+    descs = [
+        node for node in root.iter()
+        if namespace(node.tag) == SVG_NS and local_name(node.tag) == "desc" and (node.text or "").strip()
+    ]
     if not titles or not descs:
         reject("SVG_ACCESSIBLE_TEXT_REQUIRED", "non-empty title and desc required")
+    title_ids = {node.attrib.get("id") for node in titles if node.attrib.get("id")}
+    desc_ids = {node.attrib.get("id") for node in descs if node.attrib.get("id")}
+    if not title_ids or not desc_ids:
+        reject("SVG_ACCESSIBLE_TEXT_ID_REQUIRED", "title and desc require ids")
+    if not any(node_id in title_ids for node_id in labelled) or not any(node_id in desc_ids for node_id in labelled):
+        reject("SVG_ARIA_TITLE_DESC_BINDING_REQUIRED", "aria-labelledby must reference SVG title and desc")
+    allowed_label_ids = title_ids | desc_ids
+    if any(node_id not in allowed_label_ids for node_id in labelled):
+        reject("SVG_ARIA_TARGET_INVALID", "aria-labelledby may reference only SVG title and desc")
 
     for node in root.iter():
         name = local_name(node.tag)
-        node_namespace = namespace(node.tag)
         if name in FORBIDDEN_ELEMENTS:
             reject("SVG_ACTIVE_OR_FOREIGN_CONTENT", name)
         for attr, value in node.attrib.items():

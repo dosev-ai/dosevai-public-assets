@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 import yaml
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "asset_manifest.py"
@@ -68,7 +69,7 @@ class AssetManifestTests(unittest.TestCase):
         cases = [
             (LEGACY + "invented_field: true\n", "UNKNOWN_LEGACY_FIELDS", "CC0-1.0"),
             (LEGACY + "role: cover\n", "INVALID_YAML", "CC0-1.0"),
-            (LEGACY + "1: value\n", "INVALID_YAML", "CC0-1.0"),
+            (LGACY + "1: value\n", "INVALID_YAML", "CC0-1.0"),
             (LEGACY, "LEGACY_LICENSE_MAPPING_REQUIRED", None),
         ]
         for source, code, license_id in cases:
@@ -102,6 +103,7 @@ class AssetManifestTests(unittest.TestCase):
             (SVG.replace("</svg>", '<use href="other.svg#thing"/></svg>'), "SVG_EXTERNAL_REFERENCE_FORBIDDEN"),
             (SVG.replace("</svg>", '<fallback xmlns="http://www.w3.org/2001/XInclude"><rect width="1" height="1"/></fallback></svg>'), "SVG_XINCLUDE_FORBIDDEN"),
             (SVG.replace('<title id="title">', '<title xmlns="" id="title">'), "SVG_FOREIGN_NAMESPACE_FORBIDDEN"),
+            (SVG.replace('aria-labelledby="title desc"', 'aria-labelledby="shape-a shape-b"').replace('<rect ', '<rect id="shape-a" ').replace('</svg>', '<g id="shape-b"/></svg>'), "SVG_ARIA_TITLE_DESC_BINDING_REQUIRED"),
         ]
         for unsafe, code in cases:
             with self.subTest(code=code):
@@ -109,8 +111,14 @@ class AssetManifestTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertIn(code, result.stderr)
 
-    def test_image_format_and_signature_boundaries(self) -> None:
-        for suffix, mime, expected in [(".html", "text/html", "UNSUPPORTED_IMAGE_FORMAT"), (".png", "image/png", "IMAGE_SIGNATURE_MISMATCH")]:
+    def test_image_format_and_decode_boundaries(self) -> None:
+        cases = [
+            (".html", "text/html", b"<script>alert(1)</script>", "UNSUPPORTED_IMAGE_FORMAT"),
+            (".png", "image/png", b"\x89PNG\r\n\x1a\n", "IMAGE_DECODE_FAILED"),
+            (".jpg", "image/jpeg", b"\xff\xd8\xff", "IMAGE_DECODE_FAILED"),
+            (".webp", "image/webp", b"RIFF\x04\x00\x00\x00WEBP", "IMAGE_DECODE_FAILED"),
+        ]
+        for suffix, mime, payload_bytes, expected in cases:
             with self.subTest(suffix=suffix):
                 result, output, _ = self.normalize()
                 self.assertEqual(result.returncode, 0, result.stderr)
@@ -119,10 +127,23 @@ class AssetManifestTests(unittest.TestCase):
                 data["source_path"], data["mime_type"] = f"posts/test/payload{suffix}", mime
                 output.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
                 payload = output.parent / f"payload{suffix}"
-                payload.write_text("<script>alert(1)</script>", encoding="utf-8")
+                payload.write_bytes(payload_bytes)
                 invalid = self.run_cli("validate", str(output), "--asset", str(payload))
                 self.assertEqual(invalid.returncode, 2)
                 self.assertIn(expected, invalid.stderr)
+
+    def test_valid_raster_decodes(self) -> None:
+        result, output, _ = self.normalize()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = yaml.safe_load(output.read_text(encoding="utf-8"))
+        payload = output.parent / "payload.png"
+        Image.new("RGB", (2, 2), (255, 255, 255)).save(payload, format="PNG")
+        data.pop("sha256", None)
+        data["source_path"] = "posts/test/payload.png"
+        data["mime_type"] = "image/png"
+        output.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+        valid = self.run_cli("validate", str(output), "--asset", str(payload))
+        self.assertEqual(valid.returncode, 0, valid.stderr)
 
 
 if __name__ == "__main__":
