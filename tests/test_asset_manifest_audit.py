@@ -69,6 +69,17 @@ class AuditTests(unittest.TestCase):
             self.assertTrue(report["ok"])
             self.assertEqual(report["summary"], {"pass": 1})
             self.assertEqual(report["items"][0]["code"], "PACKAGE_VALID")
+            self.assertRegex(report["items"][0]["asset_evidence"][0]["sha256"], r"^[0-9a-f]{64}$")
+
+    def test_expected_repository_must_match_manifest(self) -> None:
+        with self.make_repo() as directory:
+            root = Path(directory)
+            package = root / "posts" / "sample"
+            (package / "cover.svg").write_text(VALID_SVG, encoding="utf-8")
+            (package / "cover.manifest.yaml").write_text(manifest_text(), encoding="utf-8")
+            report = audit_repository(root, expected_repository="other/repository")
+            self.assertEqual(report["items"][0]["status"], "repair")
+            self.assertEqual(report["items"][0]["code"], "SOURCE_REPOSITORY_MISMATCH")
 
     def test_source_path_must_match_actual_repository_path(self) -> None:
         with self.make_repo() as directory:
