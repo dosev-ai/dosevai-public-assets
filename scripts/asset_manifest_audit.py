@@ -5,7 +5,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
-from asset_manifest_core import MIME_BY_SUFFIX, ManifestError, load_mapping, validate_manifest
+from asset_manifest_core import MIME_BY_SUFFIX, ManifestError, load_mapping, sha256, validate_manifest
 
 DEFAULT_AUDIT_ROOTS = ("posts", "social", "diagrams", "shared")
 MANIFEST_SUFFIX = ".manifest.yaml"
@@ -54,13 +54,19 @@ def _item(
     manifest_path: Path | None = None,
     manifest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    assets = sorted(_relative(path, root) for path in asset_paths)
+    asset_path_list = list(asset_paths)
+    assets = sorted(_relative(path, root) for path in asset_path_list)
     result: dict[str, Any] = {
         "status": status,
         "code": code,
         "message": message,
         "assets": assets,
         "manifest": _relative(manifest_path, root) if manifest_path else None,
+        "asset_evidence": [
+            {"path": _relative(path, root), "sha256": sha256(path)}
+            for path in sorted(asset_path_list)
+            if path.is_file() and not path.is_symlink()
+        ],
     }
     if manifest:
         for key in ("asset_id", "content_id", "profile", "role", "source_path", "mime_type", "sha256"):
@@ -99,7 +105,11 @@ def _unsupported_adjacent_assets(manifest_path: Path, stem: str) -> list[Path]:
     )
 
 
-def audit_repository(repo_root: Path, include_roots: Iterable[str] | None = None) -> dict[str, Any]:
+def audit_repository(
+    repo_root: Path,
+    include_roots: Iterable[str] | None = None,
+    expected_repository: str | None = None,
+) -> dict[str, Any]:
     root = repo_root.resolve()
     if not root.is_dir():
         raise ManifestError("INVALID_REPOSITORY_ROOT", str(repo_root))
@@ -174,6 +184,11 @@ def audit_repository(repo_root: Path, include_roots: Iterable[str] | None = None
             manifest = load_mapping(manifest_path)
             validated = validate_manifest(manifest, asset)
             actual_source_path = _relative(asset, root)
+            if expected_repository and validated["source_repository"] != expected_repository:
+                raise ManifestError(
+                    "SOURCE_REPOSITORY_MISMATCH",
+                    f"{validated['source_repository']} != {expected_repository}",
+                )
             if validated["source_path"] != actual_source_path:
                 raise ManifestError(
                     "ASSET_SOURCE_PATH_MISMATCH",
@@ -250,6 +265,7 @@ def audit_repository(repo_root: Path, include_roots: Iterable[str] | None = None
         "ok": findings == 0,
         "repository_root": str(root),
         "audit_roots": [_relative(path, root) for path in scan_roots],
+        "expected_repository": expected_repository,
         "summary": summary,
         "package_count": len(items),
         "finding_count": findings,
@@ -266,5 +282,7 @@ def format_audit_text(report: dict[str, Any]) -> str:
         lines.append(f"- {status}: {count}")
     for item in report["items"]:
         location = item["manifest"] or ", ".join(item["assets"]) or "<unknown>"
-        lines.append(f"[{item['status']}] {location}: {item['code']} - {item['message']}")
+        evidence = item.get("asset_evidence", [])
+        checksum = f" sha256={evidence[0]['sha256']}" if len(evidence) == 1 else ""
+        lines.append(f"[{item['status']}] {location}: {item['code']} - {item['message']}{checksum}")
     return "\n".join(lines)
