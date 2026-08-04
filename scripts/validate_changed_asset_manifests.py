@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
@@ -24,21 +25,27 @@ def _unique_paths(paths: list[str]) -> list[str]:
     return result
 
 
-def _parse_name_status(output: str) -> list[str]:
+def _parse_name_status(output: bytes) -> list[str]:
+    fields = output.split(b"\0")
+    if fields and fields[-1] == b"":
+        fields.pop()
     paths: list[str] = []
-    for line in output.splitlines():
-        if not line.strip():
-            continue
-        fields = line.split("\t")
-        status = fields[0]
-        if status.startswith(("R", "C")):
-            if len(fields) != 3:
-                raise ManifestError("GIT_DIFF_PARSE_FAILED", line)
-            paths.extend(fields[1:3])
-        else:
-            if len(fields) != 2:
-                raise ManifestError("GIT_DIFF_PARSE_FAILED", line)
-            paths.append(fields[1])
+    index = 0
+    while index < len(fields):
+        raw_status = fields[index]
+        index += 1
+        try:
+            status = raw_status.decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise ManifestError("GIT_DIFF_PARSE_FAILED", repr(raw_status)) from exc
+        path_count = 2 if status.startswith(("R", "C")) else 1
+        if index + path_count > len(fields):
+            raise ManifestError("GIT_DIFF_PARSE_FAILED", status)
+        raw_paths = fields[index:index + path_count]
+        if any(not path for path in raw_paths):
+            raise ManifestError("GIT_DIFF_PARSE_FAILED", status)
+        paths.extend(os.fsdecode(path) for path in raw_paths)
+        index += path_count
     return _unique_paths(paths)
 
 
@@ -51,15 +58,16 @@ def changed_paths(repo_root: Path, base: str) -> list[str]:
         ]
         return sorted(candidates)
     commands = (
-        ["git", "diff", "--name-status", "--find-renames", "--diff-filter=ACMRD", f"{base}...HEAD"],
-        ["git", "diff", "--name-status", "--find-renames", "--diff-filter=ACMRD", base, "HEAD"],
+        ["git", "diff", "--name-status", "-z", "--find-renames", "--diff-filter=ACMRD", f"{base}...HEAD"],
+        ["git", "diff", "--name-status", "-z", "--find-renames", "--diff-filter=ACMRD", base, "HEAD"],
     )
-    result: subprocess.CompletedProcess[str] | None = None
+    result: subprocess.CompletedProcess[bytes] | None = None
     for command in commands:
-        result = subprocess.run(command, cwd=repo_root, text=True, capture_output=True, check=False)
+        result = subprocess.run(command, cwd=repo_root, capture_output=True, check=False)
         if result.returncode == 0:
             return _parse_name_status(result.stdout)
-    raise ManifestError("GIT_DIFF_FAILED", (result.stderr.strip() if result else "") or base)
+    stderr = os.fsdecode(result.stderr).strip() if result else ""
+    raise ManifestError("GIT_DIFF_FAILED", stderr or base)
 
 
 def manifest_for_asset(asset: Path) -> Path:
@@ -98,10 +106,13 @@ def manifests_for_paths(repo_root: Path, paths: list[str]) -> list[Path]:
                     raise ManifestError("ADJACENT_MANIFEST_REQUIRED", manifest.relative_to(repo_root).as_posix())
                 selected.add(manifest)
             elif manifest.exists():
-                raise ManifestError(
-                    "ORPHANED_MANIFEST_AFTER_ASSET_DELETE",
-                    manifest.relative_to(repo_root).as_posix(),
-                )
+                if adjacent_assets_for_manifest(manifest):
+                    selected.add(manifest)
+                else:
+                    raise ManifestError(
+                        "ORPHANED_MANIFEST_AFTER_ASSET_DELETE",
+                        manifest.relative_to(repo_root).as_posix(),
+                    )
     return sorted(selected)
 
 

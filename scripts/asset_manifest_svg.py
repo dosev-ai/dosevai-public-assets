@@ -13,9 +13,9 @@ RAW_PATTERNS = {
     "SVG_PROCESSING_INSTRUCTION_FORBIDDEN": re.compile(r"<\?(?!xml\s)[^>]*\?>", re.I),
     "SVG_JAVASCRIPT_FORBIDDEN": re.compile(r"javascript\s*:", re.I),
     "SVG_CSS_IMPORT_FORBIDDEN": re.compile(r"@import\b", re.I),
-    "SVG_EXTERNAL_CSS_URL_FORBIDDEN": re.compile(r"url\(\s*['\"]?(?:https?:|//|data:|javascript:)", re.I),
+    "SVG_EXTERNAL_CSS_URL_FORBIDDEN": re.compile(r"url\(\s*['\"]?\s*(?:https?:|//|data:|javascript:)", re.I),
 }
-CSS_URL_PATTERN = re.compile(r"url\(\s*['\"]?([^'\")\s]+)", re.I)
+CSS_URL_PATTERN = re.compile(r"url\(\s*(?:(['\"])(.*?)\1|([^)]*?))\s*\)", re.I | re.S)
 CSS_ESCAPE_PATTERN = re.compile(r"\\([0-9a-fA-F]{1,6})(?:[ \t\r\n\f])?|\\(.)", re.S)
 
 
@@ -52,7 +52,7 @@ def decode_css_escapes(text: str) -> str:
 def reject_non_fragment_css_urls(text: str) -> None:
     text = decode_css_escapes(text)
     for match in CSS_URL_PATTERN.finditer(text):
-        target = match.group(1).strip()
+        target = (match.group(2) if match.group(1) else match.group(3) or "").strip()
         if not target.startswith("#"):
             reject("SVG_EXTERNAL_CSS_URL_FORBIDDEN", target)
 

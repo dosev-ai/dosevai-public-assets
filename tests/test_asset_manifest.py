@@ -98,6 +98,7 @@ class AssetManifestTests(unittest.TestCase):
             (SVG.replace("</svg>", '<style>@import url("https://example.com/x.css")</style></svg>'), "SVG_CSS_IMPORT_FORBIDDEN"),
             (SVG.replace("</svg>", '<style>@im&#x70;ort url(&#x68;ttps://example.com/x.css)</style></svg>'), "SVG_CSS_IMPORT_FORBIDDEN"),
             (SVG.replace("<rect", '<rect style="fill:url(&quot;https://example.com/x.svg&quot;)"'), "SVG_EXTERNAL_CSS_URL_FORBIDDEN"),
+            (SVG.replace("<rect", '<rect style="fill:url(&quot; https://example.com/x.svg&quot;)"'), "SVG_EXTERNAL_CSS_URL_FORBIDDEN"),
             (SVG.replace("<rect", r'<rect style="fill:url(\68 ttps://example.com/x.svg)"'), "SVG_EXTERNAL_CSS_URL_FORBIDDEN"),
             (SVG.replace("<rect", '<rect style="fill:url(image.png)"'), "SVG_EXTERNAL_CSS_URL_FORBIDDEN"),
             (SVG.replace("</svg>", '<use href="other.svg#thing"/></svg>'), "SVG_EXTERNAL_REFERENCE_FORBIDDEN"),

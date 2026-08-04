@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 import yaml
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -54,6 +55,11 @@ class ChangedAssetManifestTests(unittest.TestCase):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         return directory, Path(directory.name)
+
+    def init_repo(self, repo: Path) -> None:
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
 
     def test_rejects_manifest_pointing_to_non_adjacent_asset(self) -> None:
         _, repo = self.temp_repo()
@@ -107,9 +113,7 @@ class ChangedAssetManifestTests(unittest.TestCase):
 
     def test_changed_paths_includes_deletions(self) -> None:
         _, repo = self.temp_repo()
-        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
-        subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+        self.init_repo(repo)
         package = repo / "posts/test"
         package.mkdir(parents=True)
         asset = package / "foo.svg"
@@ -124,9 +128,7 @@ class ChangedAssetManifestTests(unittest.TestCase):
 
     def test_changed_paths_preserves_both_rename_endpoints(self) -> None:
         _, repo = self.temp_repo()
-        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
-        subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+        self.init_repo(repo)
         package = repo / "posts/test"
         package.mkdir(parents=True)
         old_asset = package / "foo.svg"
@@ -150,6 +152,48 @@ class ChangedAssetManifestTests(unittest.TestCase):
         with self.assertRaises(ManifestError) as raised:
             validate_paths(repo, paths)
         self.assertEqual(raised.exception.code, "ORPHANED_MANIFEST_AFTER_ASSET_DELETE")
+
+    def test_non_ascii_changed_path_is_not_quoted_or_skipped(self) -> None:
+        _, repo = self.temp_repo()
+        self.init_repo(repo)
+        subprocess.run(["git", "commit", "--allow-empty", "-qm", "base"], cwd=repo, check=True)
+        base = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+        package = repo / "posts/test"
+        package.mkdir(parents=True)
+        asset = package / "über.svg"
+        manifest = package / "über.manifest.yaml"
+        asset.write_text(SVG.replace("</svg>", "<script/></svg>"), encoding="utf-8")
+        manifest.write_text(yaml.safe_dump(manifest_data("posts/test/über.svg", asset), allow_unicode=True, sort_keys=False), encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-qm", "unicode"], cwd=repo, check=True)
+        paths = changed_paths(repo, base)
+        self.assertIn("posts/test/über.svg", paths)
+        self.assertIn("posts/test/über.manifest.yaml", paths)
+        with self.assertRaises(ManifestError) as raised:
+            validate_paths(repo, paths)
+        self.assertEqual(raised.exception.code, "SVG_ACTIVE_OR_FOREIGN_CONTENT")
+
+    def test_valid_same_stem_extension_migration_passes(self) -> None:
+        _, repo = self.temp_repo()
+        package = repo / "posts/test"
+        package.mkdir(parents=True)
+        old_asset = package / "foo.svg"
+        manifest = package / "foo.manifest.yaml"
+        old_asset.write_text(SVG, encoding="utf-8")
+        manifest.write_text(yaml.safe_dump(manifest_data("posts/test/foo.svg", old_asset), sort_keys=False), encoding="utf-8")
+
+        old_asset.unlink()
+        new_asset = package / "foo.png"
+        Image.new("RGB", (2, 2), (255, 255, 255)).save(new_asset, format="PNG")
+        manifest.write_text(yaml.safe_dump(manifest_data("posts/test/foo.png", new_asset, "image/png"), sort_keys=False), encoding="utf-8")
+
+        results = validate_paths(repo, [
+            "posts/test/foo.svg",
+            "posts/test/foo.png",
+            "posts/test/foo.manifest.yaml",
+        ])
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["asset"], "posts/test/foo.png")
 
     def test_zero_base_scans_assets_and_manifests(self) -> None:
         _, repo = self.temp_repo()
