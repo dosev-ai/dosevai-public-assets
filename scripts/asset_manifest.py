@@ -45,6 +45,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     audit.add_argument("--root", type=Path, default=Path("."))
     audit.add_argument("--include", action="append", dest="include_roots")
     audit.add_argument("--format", choices=("json", "text"), default="json")
+    audit.add_argument("--expected-repository")
     audit.add_argument("--output", type=Path)
     audit.add_argument("--allow-findings", action="store_true")
     return parser.parse_args(argv)
@@ -83,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
             write_output(args.output, data)
             print(json.dumps({"ok": True, "output": str(args.output), "asset_id": data["asset_id"]}, sort_keys=True))
         elif args.command == "audit":
-            report = audit_repository(args.root, args.include_roots)
+            report = audit_repository(args.root, args.include_roots, args.expected_repository)
             emit_audit(args, report)
             return 0 if report["ok"] or args.allow_findings else 2
         else:
