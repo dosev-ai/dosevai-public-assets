@@ -1,0 +1,42 @@
+schema_version: 1
+profile: image
+asset_id: pwp.who-owns-ai.result-attribution-cover
+visual_id: pwp.who-owns-ai.result-attribution-cover
+content_id: post:who-owns-ai-after-the-sponsor-leaves-the-room
+source_class: project_owned
+project: personal-web-presence
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/who-owns-ai-after-the-sponsor-leaves-the-room/cover.svg
+mime_type: image/svg+xml
+sha256: 4511b3d45453fcfcf6092856def547c309ee46b474932813d979d86ea30c6b1a
+role: explanatory_cover
+sequence: 0
+step_key: cover
+title: What changed the result?
+alt: >-
+  Four sources of change—business semantics, source data, AI configuration and operating rules—flow to a business operating owner, who versions, maps, replays, attributes and approves the change before accepting expected movement, an approved improvement or an unexplained variance.
+caption: >-
+  A changed result is not automatically model drift. The operating owner separates semantic, data, AI and rule changes before approving the business outcome.
+semantic_description: >-
+  The cover presents four possible causes of a changed Finance or Procurement result. Business semantics and source data are shown in blue; AI configuration and operating rules are shown in orange. All four feed a named business operating owner. A five-stage control path—Version, Map, Replay, Attribute and Approve—supports a decision among expected movement, approved improvement and unexplained variance. The visual does not imply that the model defines policy, that every change is an error, or that approval is automatic.
+claims:
+  - A material result can change because of business semantics, source data, AI configuration or operating rules.
+  - A named business operating owner should attribute material differences before approving release.
+  - A changed result may be expected, an approved improvement or an unexplained variance.
+boundaries:
+  - The visual does not identify any employer, vendor, ERP, model or proprietary taxonomy.
+  - The visual does not claim that every output difference is model drift or an error.
+  - The visual does not imply automatic approval, unattended release or deployed enterprise maturity.
+audience:
+  - CFOs
+  - CPOs
+  - Finance and Procurement transformation leaders
+creation_method: original_svg
+contributor: OpenAI ChatGPT under owner direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: true
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: "2026-08-05"
