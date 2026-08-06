@@ -46,11 +46,12 @@ python scripts/asset_manifest.py audit \
   --format json \
   --output asset-audit.json
 
-# During a bounded migration, defer only formats whose typed profile is inactive.
+# During a bounded migration, defer only one exact known manifest and status.
 python scripts/asset_manifest.py audit \
   --root . \
   --expected-repository dosev-ai/dosevai-public-assets \
   --allow-status unsupported_profile \
+  --allow-manifest posts/example/companion.manifest.yaml \
   --format text
 
 # Exploratory inventory only. This reports all findings without certifying the tree.
@@ -61,7 +62,7 @@ python scripts/asset_manifest.py audit --root . --format text --allow-findings
 
 `audit` discovers assets and adjacent manifests under `posts/`, `social/`, `diagrams`, and `shared` by default. It validates actual bytes, full repository-relative source paths, optional expected repository identity, SHA-256 evidence, symlink safety, and deterministic package pairing. Results use these classifications: `pass`, `repair`, `missing_manifest`, `orphan_manifest`, `unsupported_profile`, or `unsafe`.
 
-The command fails when any blocking finding exists. `--allow-status` may defer only explicitly named finding classes while all other classes remain blocking. `--allow-findings` is a non-certifying exploratory mode and must not be used as the steady-state required check after migration.
+The command fails when any blocking finding exists. `--allow-status` defers a finding only when its repository-relative manifest is also named by a repeated `--allow-manifest`. Unlisted findings remain blocking, and stale allowlist entries also fail the gate. `--allow-findings` is a non-certifying exploratory mode and must not be used as the steady-state required check after migration.
 
 ## PDF certification
 
