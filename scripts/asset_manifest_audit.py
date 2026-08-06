@@ -128,20 +128,26 @@ def audit_repository(
     assets: list[Path] = []
     manifests: list[Path] = []
     items: list[dict[str, Any]] = []
+    symlink_package_keys: set[tuple[Path, str]] = set()
+    symlink_manifest_paths: set[Path] = set()
     for scan_root in scan_roots:
         for path in scan_root.rglob("*"):
             if path.is_symlink():
-                if path.name.endswith(MANIFEST_SUFFIX) or path.suffix.lower() in asset_suffixes:
-                    items.append(
-                        _item(
-                            root=root,
-                            status="unsafe",
-                            code="SYMLINK_FORBIDDEN",
-                            message="asset packages may not contain symlinked assets or manifests",
-                            asset_paths=[path] if not path.name.endswith(MANIFEST_SUFFIX) else (),
-                            manifest_path=path if path.name.endswith(MANIFEST_SUFFIX) else None,
-                        )
+                is_manifest = path.name.endswith(MANIFEST_SUFFIX)
+                if is_manifest:
+                    symlink_manifest_paths.add(path)
+                else:
+                    symlink_package_keys.add((path.parent, path.stem))
+                items.append(
+                    _item(
+                        root=root,
+                        status="unsafe",
+                        code="SYMLINK_FORBIDDEN",
+                        message="asset packages may not contain symlinked members",
+                        asset_paths=() if is_manifest else [path],
+                        manifest_path=path if is_manifest else None,
                     )
+                )
                 continue
             if not path.is_file():
                 continue
@@ -160,6 +166,10 @@ def audit_repository(
         key=lambda entry: (_relative(entry[0][0], root), entry[0][1]),
     ):
         manifest_path = _manifest_path(parent, stem)
+        if manifest_path in symlink_manifest_paths or (parent, stem) in symlink_package_keys:
+            if manifest_path.is_file() and not manifest_path.is_symlink():
+                consumed_manifests.add(manifest_path)
+            continue
         if len(variants) > 1:
             if manifest_path.exists():
                 consumed_manifests.add(manifest_path)
@@ -230,8 +240,10 @@ def audit_repository(
 
     for manifest_path in sorted(set(manifests) - consumed_manifests):
         stem = manifest_path.name[: -len(MANIFEST_SUFFIX)]
+        if (manifest_path.parent, stem) in symlink_package_keys:
+            continue
         supported = [manifest_path.parent / f"{stem}{suffix}" for suffix in sorted(asset_suffixes)]
-        supported_existing = [path for path in supported if path.exists()]
+        supported_existing = [path for path in supported if path.is_file() and not path.is_symlink()]
         unsupported_existing = _unsupported_adjacent_assets(manifest_path, stem)
         if unsupported_existing and not supported_existing:
             items.append(
