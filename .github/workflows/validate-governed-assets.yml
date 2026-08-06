@@ -3,6 +3,7 @@ name: Validate governed assets
 on:
   pull_request:
     paths:
+      - '.gitignore'
       - 'posts/**'
       - 'fixtures/**'
       - 'scripts/asset_manifest*.py'
@@ -13,6 +14,7 @@ on:
   push:
     branches: [main]
     paths:
+      - '.gitignore'
       - 'posts/**'
       - 'fixtures/**'
       - 'scripts/asset_manifest*.py'
@@ -31,6 +33,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Reject tracked Python build artifacts
+        run: |
+          tracked="$(git ls-files | grep -E '(^|/)(__pycache__/|.*\.py[cod]$)' || true)"
+          if [ -n "$tracked" ]; then
+            echo "::error::Tracked Python build artifacts are forbidden"
+            printf '%s\n' "$tracked"
+            exit 1
+          fi
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
