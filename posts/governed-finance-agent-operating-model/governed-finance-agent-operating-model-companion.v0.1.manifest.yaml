@@ -1,30 +1,38 @@
 schema_version: 1
+profile: document_pdf
 asset_id: governed-finance-agent-operating-model-companion-v0.1
+content_id: post:governed-finance-agent-operating-model
+source_class: project_owned
+project: personal-operating-system
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/governed-finance-agent-operating-model/governed-finance-agent-operating-model-companion.v0.1.pdf
+mime_type: application/pdf
+sha256: 9cf72b7709cd9a1548d4a89b4b12ec54790e1e585280cbb8c7e831512388b23e
+role: document_companion
 title: The Missing Infrastructure for Finance Agents
 subtitle: A governed finance operating model from regulation to ledger
-asset_type: public-safe-pdf-companion
-source_format: governed-private-presentation
-pages: 6
-sha256: 9cf72b7709cd9a1548d4a89b4b12ec54790e1e585280cbb8c7e831512388b23e
-license: CC0-1.0
-alt_text: >-
-  A six-page Dosev AI presentation explaining a proposed regulation-to-ledger control plane,
-  role-bounded finance agents, segregation of duties, transaction provenance, and a bounded
-  proof-of-concept path.
-caption: >-
-  Public-safe companion to the dosevai.com article on the infrastructure required for governed finance agents.
-semantic_description: >-
-  The document presents a conceptual architecture connecting external authority, approved company policy,
-  deterministic calculations, specialist and reviewer agents, controlled ERP execution, human authorization,
-  and transaction-level evidence.
+alt: A six-page Dosev AI presentation explaining a proposed regulation-to-ledger control plane, role-bounded finance agents, segregation of duties, transaction provenance, and a bounded proof-of-concept path.
+caption: Public-safe companion to the dosevai.com article on the infrastructure required for governed finance agents.
+semantic_description: The document presents a conceptual architecture connecting external authority, approved company policy, deterministic calculations, specialist and reviewer agents, controlled ERP execution, human authorization, and transaction-level evidence.
 claims:
-  - The document is a conceptual synthesis using existing standards and agent patterns.
-  - A bounded proof of method can start with synthetic cases and repository-based governance.
+- The document is a conceptual synthesis using existing standards and agent patterns.
+- A bounded proof of method can start with synthetic cases and repository-based governance.
 boundaries:
-  - Not evidence of a deployed enterprise accounting platform.
-  - Not a claim of autonomous accounting, guaranteed compliance, audit acceptance, or cost savings.
-  - Contains no employer, supplier, client, private-repository, credential, or internal-governance information.
-  - The public PDF contains no speaker notes.
-creation_method: >-
-  Generated as a compressed public-safe derivative of the reviewed private presentation pack and rendered for inspection.
-public_safety_state: reviewed-public-safe
+- Not evidence of a deployed enterprise accounting platform.
+- Not a claim of autonomous accounting, guaranteed compliance, audit acceptance, or cost savings.
+- Contains no employer, supplier, client, private-repository, credential, or internal-governance information.
+- The public PDF contains no speaker notes.
+creation_method: Generated as a compressed public-safe derivative of the reviewed private presentation pack and rendered for inspection.
+contributor: Delyan Dosev
+license: CC0-1.0
+public_safe: true
+guide_eligible: false
+external_resources: false
+scripts: false
+page_count: 6
+source_format: governed-private-presentation
+render_inspected: true
+render_evidence: Legacy package records that all 6 pages were rendered and inspected as a public-safe derivative.
+private_notes_removed: true
+embedded_object_policy: forbid
+annotation_policy: forbid
