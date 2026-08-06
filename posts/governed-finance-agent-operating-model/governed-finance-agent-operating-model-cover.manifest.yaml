@@ -1,29 +1,33 @@
 schema_version: 1
+profile: image
 asset_id: governed-finance-agent-operating-model-cover
+visual_id: governed-finance-agent-operating-model-cover
+content_id: post:governed-finance-agent-operating-model
+source_class: project_owned
+project: personal-operating-system
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/governed-finance-agent-operating-model/governed-finance-agent-operating-model-cover.svg
+mime_type: image/svg+xml
+sha256: 501ec3c32b773fa06da93f07170b10bcd242c9793c83c38234c977366737cd37
+role: explanatory_cover
+section_anchor: null
+sequence: 0
 title: The Missing Infrastructure for Finance Agents
-asset_type: public-safe-cms-cover
-format: image/svg+xml
-width: 1600
-height: 900
-sha256: 4c072848df9372b8e6a55d029552a477da07f9b2f7b7369db6b000072c43db6b
-license: CC0-1.0
-alt_text: >-
-  Dark navy infographic titled The Missing Infrastructure for Finance Agents, showing a governed
-  flow from existing standards through corporate knowledge, runtime governance, specialist agents,
-  ERP execution and a decision passport.
-caption: >-
-  Existing standards and enterprise systems form the foundation; the missing layer governs how
-  approved knowledge becomes a controlled, reviewable business decision.
-semantic_description: >-
-  A public-safe 16:9 cover visual for the dosevai.com article. It presents six connected stages:
-  existing standards, corporate knowledge, runtime governance, specialist agents, ERP execution,
-  and decision passport.
+alt: Dark navy infographic titled The Missing Infrastructure for Finance Agents, showing a governed flow from existing standards through corporate knowledge, runtime governance, specialist agents, ERP execution and a decision passport.
+caption: Existing standards and enterprise systems form the foundation; the missing layer governs how approved knowledge becomes a controlled, reviewable business decision.
+semantic_description: 'A public-safe 16:9 cover visual for the dosevai.com article. It presents six connected stages: existing standards, corporate knowledge, runtime governance, specialist agents, ERP execution, and decision passport.'
 claims:
-  - Existing standards and enterprise systems provide much of the structural foundation.
-  - The proposed decision-control layer connects approved knowledge to bounded execution and provenance.
+- Existing standards and enterprise systems provide much of the structural foundation.
+- The proposed decision-control layer connects approved knowledge to bounded execution and provenance.
 boundaries:
-  - Conceptual architecture, not evidence of a deployed enterprise platform.
-  - No employer, supplier, client, private repository, credential or internal governance information.
-creation_method: >-
-  Recreated as a deterministic, self-contained SVG from the owner-selected cover concept and rendered for visual inspection.
-public_safety_state: reviewed-public-safe
+- Conceptual architecture, not evidence of a deployed enterprise platform.
+- No employer, supplier, client, private repository, credential or internal governance information.
+creation_method: Recreated as a deterministic, self-contained SVG from the owner-selected cover concept and rendered for visual inspection.
+contributor: Delyan Dosev
+license: CC0-1.0
+public_safe: true
+guide_eligible: false
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: '2026-07-27'
