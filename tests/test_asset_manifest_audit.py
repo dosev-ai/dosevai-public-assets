@@ -254,7 +254,9 @@ class AuditTests(unittest.TestCase):
             (package / "companion.manifest.yaml").write_text("profile: presentation_pptx\n", encoding="utf-8")
             command = [
                 sys.executable, str(SCRIPTS / "asset_manifest.py"), "audit",
-                "--root", str(root), "--allow-status", "unsupported_profile",
+                "--root", str(root),
+                "--allow-status", "unsupported_profile",
+                "--allow-manifest", "posts/sample/companion.manifest.yaml",
             ]
             allowed = subprocess.run(command, text=True, capture_output=True, check=False)
             self.assertEqual(allowed.returncode, 0, allowed.stderr)
