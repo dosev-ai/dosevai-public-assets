@@ -73,6 +73,12 @@ class RepairedManifestTests(unittest.TestCase):
                     manifest.read_text(encoding="utf-8"),
                 )
 
+    def test_required_audit_has_no_temporary_migration_allowances(self) -> None:
+        workflow = (ROOT / ".github/workflows/validate-governed-assets.yml").read_text(encoding="utf-8")
+        self.assertNotIn("--allow-findings", workflow)
+        self.assertNotIn("--allow-status", workflow)
+        self.assertNotIn("--allow-manifest", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
