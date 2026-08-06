@@ -64,6 +64,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         choices=("repair", "missing_manifest", "orphan_manifest", "unsupported_profile", "unsafe"),
         default=[],
     )
+    audit.add_argument(
+        "--allow-manifest",
+        action="append",
+        default=[],
+        help="Repository-relative manifest path eligible for an allowed status; repeat for each known migration.",
+    )
     return parser.parse_args(argv)
 
 
@@ -120,13 +126,26 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "audit":
             report = audit_repository(args.root, args.include_roots, args.expected_repository)
             allowed_statuses = sorted(set(args.allow_status))
-            blocking_findings = [
-                item for item in report["items"]
-                if item["status"] != "pass" and item["status"] not in allowed_statuses
+            allowed_manifests = sorted(set(args.allow_manifest))
+            allowed_manifest_set = set(allowed_manifests)
+            finding_items = [item for item in report["items"] if item["status"] != "pass"]
+            allowed_findings = [
+                item for item in finding_items
+                if item["status"] in allowed_statuses and item.get("manifest") in allowed_manifest_set
             ]
+            allowed_finding_ids = {id(item) for item in allowed_findings}
+            blocking_findings = [item for item in finding_items if id(item) not in allowed_finding_ids]
+            matched_manifests = {
+                item["manifest"] for item in allowed_findings if isinstance(item.get("manifest"), str)
+            }
+            unused_allowed_manifests = sorted(allowed_manifest_set - matched_manifests)
             report["allowed_statuses"] = allowed_statuses
+            report["allowed_manifests"] = allowed_manifests
+            report["allowed_finding_count"] = len(allowed_findings)
             report["blocking_finding_count"] = len(blocking_findings)
-            report["gate_ok"] = not blocking_findings
+            report["unused_allowed_manifests"] = unused_allowed_manifests
+            report["allowlist_error_count"] = len(unused_allowed_manifests)
+            report["gate_ok"] = not blocking_findings and not unused_allowed_manifests
             _emit_audit(args, report)
             return 0 if args.allow_findings or report["gate_ok"] else 2
         else:
