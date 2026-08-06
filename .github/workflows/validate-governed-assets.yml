@@ -43,7 +43,6 @@ jobs:
           --root .
           --expected-repository dosev-ai/dosevai-public-assets
           --format text
-          --allow-status repair
       - name: Validate changed asset packages
         run: >-
           python scripts/validate_changed_asset_manifests.py
