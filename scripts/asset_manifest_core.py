@@ -12,24 +12,32 @@ from PIL import Image, UnidentifiedImageError
 import yaml
 from yaml.constructor import ConstructorError
 
+from asset_manifest_pdf import PdfValidationError, validate_pdf
 from asset_manifest_svg import SvgValidationError, validate_svg
 
 SCHEMA_VERSION = 1
-SUPPORTED_PROFILES = {"image"}
+SUPPORTED_PROFILES = {"image", "document_pdf"}
 SAFE_LEGACY_STATES = {"approved-for-publication", "approved-for-review", "reviewed-public-safe", "public-safe"}
 
 ORDERED_KEYS = [
     "schema_version", "profile", "asset_id", "visual_id", "content_id", "source_class", "project",
     "source_repository", "source_path", "mime_type", "sha256", "role", "section_anchor", "sequence",
-    "step_key", "title", "alt", "caption", "semantic_description", "claims", "boundaries", "audience",
-    "creation_method", "contributor", "license", "public_safe", "guide_eligible", "external_resources",
-    "scripts", "remote_fonts", "created_at",
+    "step_key", "title", "subtitle", "alt", "caption", "semantic_description", "claims", "boundaries",
+    "audience", "creation_method", "contributor", "license", "public_safe", "guide_eligible",
+    "external_resources", "scripts", "remote_fonts", "page_count", "source_format", "render_inspected",
+    "render_evidence", "private_notes_removed", "embedded_object_policy", "annotation_policy",
+    "filename_policy", "update_policy", "created_at",
 ]
 ALLOWED_KEYS = set(ORDERED_KEYS)
 LEGACY_KEYS = {
     "visual_id", "repository", "path", "role", "target_content", "title", "alt_text", "caption",
     "semantic_description", "claims", "boundaries", "audience", "creation_method", "rights",
     "public_safety", "external_resources", "scripts", "remote_fonts", "guide_eligible", "created_at",
+}
+PDF_LEGACY_KEYS = {
+    "schema_version", "asset_id", "title", "subtitle", "asset_type", "source_format", "pages", "sha256",
+    "license", "filename_policy", "update_policy", "alt_text", "caption", "semantic_description", "claims",
+    "boundaries", "creation_method", "public_safety_state",
 }
 REQUIRED = {
     "schema_version": int, "profile": str, "asset_id": str, "content_id": str, "source_class": str,
@@ -38,12 +46,22 @@ REQUIRED = {
     "creation_method": str, "contributor": str, "license": str, "public_safe": bool,
     "guide_eligible": bool, "external_resources": bool, "scripts": bool,
 }
+PDF_REQUIRED = {
+    "page_count": int, "source_format": str, "render_inspected": bool, "render_evidence": str,
+    "private_notes_removed": bool, "embedded_object_policy": str, "annotation_policy": str,
+}
 ROLE_MAP = {"cover": "explanatory_cover", "inline": "explanatory_inline", "gallery": "gallery_item"}
-MIME_BY_SUFFIX = {".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+MIME_BY_SUFFIX = {
+    ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".webp": "image/webp", ".pdf": "application/pdf",
+}
 PIL_FORMAT_BY_MIME = {"image/png": "PNG", "image/jpeg": "JPEG", "image/webp": "WEBP"}
 OPTIONAL_TYPES = {
     "visual_id": str, "sha256": str, "role": str, "section_anchor": (str, type(None)), "sequence": int,
-    "step_key": str, "title": str, "audience": list, "remote_fonts": bool, "created_at": str,
+    "step_key": str, "title": str, "subtitle": str, "audience": list, "remote_fonts": bool,
+    "page_count": int, "source_format": str, "render_inspected": bool, "render_evidence": str,
+    "private_notes_removed": bool, "embedded_object_policy": str, "annotation_policy": str,
+    "filename_policy": str, "update_policy": str, "created_at": str,
 }
 
 
@@ -61,6 +79,7 @@ def _construct_unique_mapping(loader: UniqueKeyLoader, node: yaml.MappingNode, d
             raise ConstructorError("while constructing a mapping", node.start_mark, f"duplicate key: {key!r}", key_node.start_mark)
         mapping[key] = loader.construct_object(value_node, deep=deep)
     return mapping
+
 
 UniqueKeyLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_unique_mapping)
 
@@ -144,6 +163,15 @@ def _matches_type(value: Any, expected: type | tuple[type, ...]) -> bool:
     return isinstance(value, expected)
 
 
+def _validate_required_fields(data: dict[str, Any], required: dict[str, type]) -> None:
+    for key, expected in required.items():
+        value = data.get(key)
+        if key not in data:
+            fail("MISSING_FIELD", key)
+        if not _matches_type(value, expected) or (expected is str and not value.strip()):
+            fail("INVALID_FIELD_TYPE", f"{key} must be {expected.__name__}")
+
+
 def validate_raster_image(path: Path, mime_type: str) -> None:
     expected_format = PIL_FORMAT_BY_MIME.get(mime_type)
     if expected_format is None:
@@ -166,16 +194,27 @@ def validate_raster_image(path: Path, mime_type: str) -> None:
         fail("IMAGE_DIMENSIONS_INVALID", f"{path.name}: {width}x{height}")
 
 
+def _validate_pdf_contract(data: dict[str, Any]) -> None:
+    _validate_required_fields(data, PDF_REQUIRED)
+    if data["page_count"] <= 0:
+        fail("PDF_PAGE_COUNT_INVALID", str(data["page_count"]))
+    if not re.fullmatch(r"[a-z0-9]+(?:[._-][a-z0-9]+)*", data["source_format"]):
+        fail("PDF_SOURCE_FORMAT_INVALID", data["source_format"])
+    if data["render_inspected"] is not True:
+        fail("PDF_RENDER_INSPECTION_REQUIRED", "render_inspected must be true")
+    if data["private_notes_removed"] is not True:
+        fail("PDF_PRIVATE_NOTES_REMOVAL_REQUIRED", "private_notes_removed must be true")
+    if data["embedded_object_policy"] != "forbid":
+        fail("PDF_EMBEDDED_OBJECT_POLICY_INVALID", data["embedded_object_policy"])
+    if data["annotation_policy"] != "forbid":
+        fail("PDF_ANNOTATION_POLICY_INVALID", data["annotation_policy"])
+
+
 def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[str, Any]:
     unknown = sorted(set(data) - ALLOWED_KEYS)
     if unknown:
         fail("UNKNOWN_FIELDS", ", ".join(unknown))
-    for key, expected in REQUIRED.items():
-        value = data.get(key)
-        if key not in data:
-            fail("MISSING_FIELD", key)
-        if not _matches_type(value, expected) or (expected is str and not value.strip()):
-            fail("INVALID_FIELD_TYPE", f"{key} must be {expected.__name__}")
+    _validate_required_fields(data, REQUIRED)
     for key, expected in OPTIONAL_TYPES.items():
         if key in data and not _matches_type(data[key], expected):
             expected_name = expected.__name__ if isinstance(expected, type) else " or ".join(item.__name__ for item in expected)
@@ -185,10 +224,17 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
     if data["profile"] not in SUPPORTED_PROFILES:
         fail("UNSUPPORTED_PROFILE", data["profile"])
     if data["profile"] == "image":
+        pdf_only = set(PDF_REQUIRED) | {"filename_policy", "update_policy"}
+        if any(key in data for key in pdf_only):
+            fail("IMAGE_PDF_FIELDS_FORBIDDEN", ", ".join(sorted(pdf_only & set(data))))
         if data.get("visual_id") != data["asset_id"]:
             fail("IDENTITY_MISMATCH", "visual_id must equal asset_id for image profile v1")
         if data.get("remote_fonts") is not False:
             fail("REMOTE_FONTS_FORBIDDEN", "remote_fonts must be false")
+    elif data["profile"] == "document_pdf":
+        _validate_pdf_contract(data)
+        if "visual_id" in data or "remote_fonts" in data:
+            fail("PDF_IMAGE_FIELDS_FORBIDDEN", "visual_id and remote_fonts are image-only")
     if "audience" in data and (not data["audience"] or not all(isinstance(item, str) and item.strip() for item in data["audience"])):
         fail("EMPTY_SEMANTIC_LIST", "audience")
     for key in ("claims", "boundaries"):
@@ -204,8 +250,10 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
         fail("INVALID_SOURCE_REPOSITORY", data["source_repository"])
     suffix = PurePosixPath(source_path).suffix.lower()
     expected_mime = MIME_BY_SUFFIX.get(suffix)
-    if data["profile"] == "image" and expected_mime is None:
+    if data["profile"] == "image" and expected_mime not in {"image/svg+xml", *PIL_FORMAT_BY_MIME}:
         fail("UNSUPPORTED_IMAGE_FORMAT", suffix or "missing suffix")
+    if data["profile"] == "document_pdf" and suffix != ".pdf":
+        fail("UNSUPPORTED_PDF_FORMAT", suffix or "missing suffix")
     if data["mime_type"] != expected_mime:
         fail("MIME_PATH_MISMATCH", f"{data['mime_type']} != {expected_mime}")
     checksum = data.get("sha256")
@@ -218,13 +266,19 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
         actual = sha256(asset)
         if checksum is not None and checksum != actual:
             fail("CHECKSUM_MISMATCH", f"{checksum} != {actual}")
-        if asset.suffix.lower() == ".svg":
-            try:
-                validate_svg(asset)
-            except SvgValidationError as exc:
-                fail(exc.code, exc.message)
+        if data["profile"] == "image":
+            if asset.suffix.lower() == ".svg":
+                try:
+                    validate_svg(asset)
+                except SvgValidationError as exc:
+                    fail(exc.code, exc.message)
+            else:
+                validate_raster_image(asset, data["mime_type"])
         else:
-            validate_raster_image(asset, data["mime_type"])
+            try:
+                validate_pdf(asset, expected_page_count=data["page_count"])
+            except PdfValidationError as exc:
+                fail(exc.code, exc.message)
     return data
 
 
@@ -270,6 +324,53 @@ def normalize_legacy(
         "external_resources": legacy_bool(legacy.get("external_resources"), "external_resources"),
         "scripts": legacy_bool(legacy.get("scripts"), "scripts"),
         "remote_fonts": legacy_bool(legacy.get("remote_fonts"), "remote_fonts"), "created_at": created_at,
+    }
+    if asset is not None:
+        data["sha256"] = sha256(asset)
+    return canonical(validate_manifest({key: value for key, value in data.items() if value is not None}, asset))
+
+
+def normalize_pdf_legacy(
+    legacy: dict[str, Any], *, project: str, contributor: str, content_id: str,
+    source_repository: str, source_path: str, render_evidence: str, source_class: str = "project_owned",
+    license_id: str | None = None, role: str = "document_companion", guide_eligible: bool = False,
+    render_inspected: bool = False, private_notes_removed: bool = False, asset: Path | None = None,
+) -> dict[str, Any]:
+    unknown = sorted(set(legacy) - PDF_LEGACY_KEYS)
+    if unknown:
+        fail("UNKNOWN_LEGACY_FIELDS", ", ".join(unknown))
+    required_values = {
+        "asset_id": legacy.get("asset_id"), "content_id": content_id, "source_repository": source_repository,
+        "source_path": source_path, "alt_text": legacy.get("alt_text"), "caption": legacy.get("caption"),
+        "semantic_description": legacy.get("semantic_description"), "source_format": legacy.get("source_format"),
+        "creation_method": legacy.get("creation_method"), "contributor": contributor, "render_evidence": render_evidence,
+    }
+    missing = [key for key, value in required_values.items() if not isinstance(value, str) or not value.strip()]
+    if missing:
+        fail("LEGACY_REQUIRED_FIELD_MISSING", ", ".join(missing))
+    state = legacy.get("public_safety_state")
+    if not isinstance(state, str) or state.strip().lower() not in SAFE_LEGACY_STATES:
+        fail("LEGACY_PUBLIC_SAFETY_UNRECOGNIZED", repr(state))
+    effective_license = license_id or legacy.get("license")
+    if not isinstance(effective_license, str) or not effective_license.strip():
+        fail("LEGACY_LICENSE_MAPPING_REQUIRED", repr(legacy.get("license")))
+    pages = legacy.get("pages")
+    if type(pages) is not int or pages <= 0:
+        fail("PDF_PAGE_COUNT_INVALID", repr(pages))
+    data: dict[str, Any] = {
+        "schema_version": SCHEMA_VERSION, "profile": "document_pdf", "asset_id": legacy["asset_id"],
+        "content_id": content_id, "source_class": source_class, "project": project,
+        "source_repository": source_repository, "source_path": safe_path(source_path),
+        "mime_type": mime_for(source_path), "role": role, "title": legacy.get("title"),
+        "subtitle": legacy.get("subtitle"), "alt": legacy["alt_text"], "caption": legacy["caption"],
+        "semantic_description": legacy["semantic_description"], "claims": legacy.get("claims"),
+        "boundaries": legacy.get("boundaries"), "creation_method": legacy["creation_method"],
+        "contributor": contributor, "license": effective_license, "public_safe": True,
+        "guide_eligible": guide_eligible, "external_resources": False, "scripts": False,
+        "page_count": pages, "source_format": legacy["source_format"], "render_inspected": render_inspected,
+        "render_evidence": render_evidence, "private_notes_removed": private_notes_removed,
+        "embedded_object_policy": "forbid", "annotation_policy": "forbid",
+        "filename_policy": legacy.get("filename_policy"), "update_policy": legacy.get("update_policy"),
     }
     if asset is not None:
         data["sha256"] = sha256(asset)

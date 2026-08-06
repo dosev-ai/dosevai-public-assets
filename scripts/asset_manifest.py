@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate, normalize, inspect, and validate governed asset manifests."""
+"""Generate, normalize, inspect, validate, and audit governed asset manifests."""
 from __future__ import annotations
 
 import argparse
@@ -7,8 +7,10 @@ import json
 import sys
 from pathlib import Path
 
+from asset_manifest_audit import audit_repository, format_audit_text
 from asset_manifest_core import (
-    ManifestError, canonical, dump_manifest, load_mapping, normalize_legacy, sha256, validate_manifest,
+    ManifestError, canonical, dump_manifest, load_mapping, normalize_legacy, normalize_pdf_legacy,
+    sha256, validate_manifest,
 )
 
 
@@ -27,6 +29,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     add_asset(inspect, required=False)
     normalize = commands.add_parser("normalize")
     normalize.add_argument("manifest", type=Path)
+    normalize.add_argument("--profile", choices=("image", "document_pdf"), default="image")
     normalize.add_argument("--output", type=Path, required=True)
     normalize.add_argument("--project", required=True)
     normalize.add_argument("--contributor", required=True)
@@ -35,17 +38,52 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     normalize.add_argument("--sequence", type=int, default=0)
     normalize.add_argument("--section-anchor")
     normalize.add_argument("--step-key")
+    normalize.add_argument("--content-id")
+    normalize.add_argument("--source-repository")
+    normalize.add_argument("--source-path")
+    normalize.add_argument("--role", default="document_companion")
+    normalize.add_argument("--render-evidence")
+    normalize.add_argument("--render-inspected", action="store_true")
+    normalize.add_argument("--private-notes-removed", action="store_true")
+    normalize.add_argument("--guide-eligible", action="store_true")
     add_asset(normalize, required=True)
     generate = commands.add_parser("generate")
     generate.add_argument("metadata", type=Path)
     generate.add_argument("--output", type=Path, required=True)
     add_asset(generate, required=True)
+    audit = commands.add_parser("audit")
+    audit.add_argument("--root", type=Path, default=Path("."))
+    audit.add_argument("--include", action="append", dest="include_roots")
+    audit.add_argument("--format", choices=("json", "text"), default="json")
+    audit.add_argument("--expected-repository")
+    audit.add_argument("--output", type=Path)
+    audit.add_argument("--allow-findings", action="store_true")
+    audit.add_argument(
+        "--allow-status",
+        action="append",
+        choices=("repair", "missing_manifest", "orphan_manifest", "unsupported_profile", "unsafe"),
+        default=[],
+    )
+    audit.add_argument(
+        "--allow-manifest",
+        action="append",
+        default=[],
+        help="Repository-relative manifest path eligible for an allowed status; repeat for each known migration.",
+    )
     return parser.parse_args(argv)
 
 
 def write_output(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(dump_manifest(data), encoding="utf-8")
+
+
+def _emit_audit(args: argparse.Namespace, report: dict) -> None:
+    rendered = json.dumps(report, indent=2, sort_keys=True) if args.format == "json" else format_audit_text(report)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -60,13 +98,56 @@ def main(argv: list[str] | None = None) -> int:
             }
             print(json.dumps(result, indent=2 if args.command == "inspect" else None, sort_keys=True))
         elif args.command == "normalize":
-            data = normalize_legacy(
-                load_mapping(args.manifest), project=args.project, contributor=args.contributor,
-                source_class=args.source_class, license_id=args.license_id, sequence=args.sequence,
-                section_anchor=args.section_anchor, step_key=args.step_key, asset=args.asset,
-            )
+            legacy = load_mapping(args.manifest)
+            if args.profile == "document_pdf":
+                required_args = {
+                    "content_id": args.content_id, "source_repository": args.source_repository,
+                    "source_path": args.source_path, "render_evidence": args.render_evidence,
+                }
+                missing = [key for key, value in required_args.items() if not value]
+                if missing:
+                    raise ManifestError("PDF_NORMALIZE_ARGUMENT_REQUIRED", ", ".join(missing))
+                data = normalize_pdf_legacy(
+                    legacy, project=args.project, contributor=args.contributor, content_id=args.content_id,
+                    source_repository=args.source_repository, source_path=args.source_path,
+                    render_evidence=args.render_evidence, source_class=args.source_class,
+                    license_id=args.license_id, role=args.role, guide_eligible=args.guide_eligible,
+                    render_inspected=args.render_inspected, private_notes_removed=args.private_notes_removed,
+                    asset=args.asset,
+                )
+            else:
+                data = normalize_legacy(
+                    legacy, project=args.project, contributor=args.contributor,
+                    source_class=args.source_class, license_id=args.license_id, sequence=args.sequence,
+                    section_anchor=args.section_anchor, step_key=args.step_key, asset=args.asset,
+                )
             write_output(args.output, data)
             print(json.dumps({"ok": True, "output": str(args.output), "asset_id": data["asset_id"]}, sort_keys=True))
+        elif args.command == "audit":
+            report = audit_repository(args.root, args.include_roots, args.expected_repository)
+            allowed_statuses = sorted(set(args.allow_status))
+            allowed_manifests = sorted(set(args.allow_manifest))
+            allowed_manifest_set = set(allowed_manifests)
+            finding_items = [item for item in report["items"] if item["status"] != "pass"]
+            allowed_findings = [
+                item for item in finding_items
+                if item["status"] in allowed_statuses and item.get("manifest") in allowed_manifest_set
+            ]
+            allowed_finding_ids = {id(item) for item in allowed_findings}
+            blocking_findings = [item for item in finding_items if id(item) not in allowed_finding_ids]
+            matched_manifests = {
+                item["manifest"] for item in allowed_findings if isinstance(item.get("manifest"), str)
+            }
+            unused_allowed_manifests = sorted(allowed_manifest_set - matched_manifests)
+            report["allowed_statuses"] = allowed_statuses
+            report["allowed_manifests"] = allowed_manifests
+            report["allowed_finding_count"] = len(allowed_findings)
+            report["blocking_finding_count"] = len(blocking_findings)
+            report["unused_allowed_manifests"] = unused_allowed_manifests
+            report["allowlist_error_count"] = len(unused_allowed_manifests)
+            report["gate_ok"] = not blocking_findings and not unused_allowed_manifests
+            _emit_audit(args, report)
+            return 0 if args.allow_findings or report["gate_ok"] else 2
         else:
             data = load_mapping(args.metadata)
             if args.asset is not None:
