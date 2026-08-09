@@ -53,13 +53,6 @@ jobs:
           --root .
           --expected-repository dosev-ai/dosevai-public-assets
           --format text
-          --allow-status repair
-          --allow-manifest posts/publishing-workflow-is-live/cover.manifest.yaml
-          --allow-manifest posts/design-first-ai-delivery-workflow/cover.manifest.yaml
-          --allow-manifest posts/excel-to-powerpoint-governed-workflow/cover.manifest.yaml
-          --allow-manifest posts/governed-finance-agent-operating-model/governed-finance-agent-operating-model-cover.manifest.yaml
-          --allow-manifest posts/governed-finance-agent-operating-model/governed-finance-agent-operating-model-companion.manifest.yaml
-          --allow-manifest posts/governed-finance-agent-operating-model/governed-finance-agent-operating-model-companion.v0.1.manifest.yaml
       - name: Validate changed asset packages
         run: >-
           python scripts/validate_changed_asset_manifests.py

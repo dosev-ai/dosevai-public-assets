@@ -1,46 +1,30 @@
 schema_version: 1
+profile: image
+asset_id: dosevai.governed-delivery-loop
 visual_id: dosevai.governed-delivery-loop
 content_id: post:design-first-ai-delivery-workflow
 source_class: project_owned
 project: personal-operating-system
 source_repository: dosev-ai/dosevai-public-assets
 source_path: posts/design-first-ai-delivery-workflow/cover.svg
-
+mime_type: image/svg+xml
+sha256: 927c6c08894574e1675d6d9675c6a1e5c26510efc9b5f87731ee74aea9fd451e
 role: explanatory_cover
 section_anchor: null
 sequence: 0
 step_key: governed-delivery-loop
-
-alt: >-
-  Governed delivery loop starting with a high-level Action Worker plan, passing
-  through reviewed PRD and ADR pull requests, returning to Action Worker for
-  decomposition, and continuing through Claude Code execution, parallel Codex
-  and Copilot review, validation, UAT, and human approval.
-caption: >-
-  The workflow separates planning, design authority, execution, independent
-  review, and release validation while feeding evidence back into future plans.
-semantic_description: >-
-  Seven-stage delivery workflow. Action Worker first holds a reviewed high-level
-  plan. Product requirements pass through a PRD pull request and material
-  architecture through an ADR pull request; both may require repeated review and
-  repair cycles. The merged documents become design authority. The approved
-  design is then decomposed in Action Worker into epics, actions, dependencies,
-  and validation checkpoints. Claude Code executes bounded work. Codex and
-  GitHub Copilot provide independent pull-request reviews in parallel. CI,
-  tests, runtime validation, UAT, and human approval control release. Feedback
-  informs later planning. The visual does not imply autonomous approval or
-  unattended release.
-
+alt: Governed delivery loop starting with a high-level Action Worker plan, passing through reviewed PRD and ADR pull requests, returning to Action Worker for decomposition, and continuing through Claude Code execution, parallel Codex and Copilot review, validation, UAT, and human approval.
+caption: The workflow separates planning, design authority, execution, independent review, and release validation while feeding evidence back into future plans.
+semantic_description: Seven-stage delivery workflow. Action Worker first holds a reviewed high-level plan. Product requirements pass through a PRD pull request and material architecture through an ADR pull request; both may require repeated review and repair cycles. The merged documents become design authority. The approved design is then decomposed in Action Worker into epics, actions, dependencies, and validation checkpoints. Claude Code executes bounded work. Codex and GitHub Copilot provide independent pull-request reviews in parallel. CI, tests, runtime validation, UAT, and human approval control release. Feedback informs later planning. The visual does not imply autonomous approval or unattended release.
 claims:
-  - The workflow separates high-level planning from reviewed product and architecture authority.
-  - Detailed execution decomposition occurs after the reviewed PRD and ADR converge.
-  - Implementation and independent pull-request review occupy distinct lanes.
-  - Release requires evidence and accountable human approval.
+- The workflow separates high-level planning from reviewed product and architecture authority.
+- Detailed execution decomposition occurs after the reviewed PRD and ADR converge.
+- Implementation and independent pull-request review occupy distinct lanes.
+- Release requires evidence and accountable human approval.
 boundaries:
-  - The visual describes a personal operating model, not a universal software-delivery standard.
-  - AI review does not replace accountable human review or release authority.
-  - The diagram does not claim that the tools act autonomously or approve their own work.
-
+- The visual describes a personal operating model, not a universal software-delivery standard.
+- AI review does not replace accountable human review or release authority.
+- The diagram does not claim that the tools act autonomously or approve their own work.
 creation_method: original_svg_recreated_from_owner_approved_concept
 contributor: OpenAI ChatGPT with Delyan Dosev direction
 license: CC0-1.0
@@ -48,3 +32,4 @@ public_safe: true
 guide_eligible: true
 external_resources: false
 scripts: false
+remote_fonts: false
