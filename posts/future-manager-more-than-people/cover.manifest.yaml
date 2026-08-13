@@ -8,7 +8,7 @@ project: personal-web-presence
 source_repository: dosev-ai/dosevai-public-assets
 source_path: posts/future-manager-more-than-people/cover.svg
 mime_type: image/svg+xml
-sha256: 2f91d5e9430714d1d3fd989ce7b6cd9d73a9de2c11f9780c94e5bcadbb4ad08f
+sha256: 6e6fecd28948fbbc176d77a2733f202fafd5fac28fee78397d3581bb5ce00948
 role: explanatory_cover
 sequence: 0
 step_key: cover
