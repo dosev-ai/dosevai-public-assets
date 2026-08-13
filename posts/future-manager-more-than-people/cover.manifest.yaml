@@ -1,0 +1,45 @@
+schema_version: 1
+profile: image
+asset_id: pwp.future-manager.span-of-orchestration-cover
+visual_id: pwp.future-manager.span-of-orchestration-cover
+content_id: post:future-manager-more-than-people
+source_class: project_owned
+project: personal-web-presence
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/future-manager-more-than-people/cover.svg
+mime_type: image/svg+xml
+sha256: f055673d9e1e465a921223b3df1b909dc306de42f5085c5aa87468d604a8cdc2
+role: explanatory_cover
+sequence: 0
+step_key: cover
+title: The Future Manager Will Manage More Than People
+alt: >-
+  A manager expands from span of control to span of orchestration, coordinating people, agents, knowledge, tools and workflows within evidence, approval and escalation controls.
+caption: >-
+  Management scope expands beyond people: functional managers coordinate human and machine capability while evidence, approval and escalation preserve accountability.
+semantic_description: >-
+  The cover shows five capabilities—People, Agents, Knowledge, Tools and Workflows—connected to a central manager figure. The lower control layer contains Evidence, Approval and Escalation. The composition illustrates the article's span-of-orchestration thesis: managers remain people leaders while becoming accountable for how human judgement, AI agents, approved knowledge, deterministic tools and reusable workflows combine to produce business outcomes. The visual does not imply autonomous approval, reduced human accountability or that every manager must become an AI engineer.
+claims:
+  - Managers can be accountable for work performed across people, agents, knowledge, tools and workflows.
+  - Evidence, approval and escalation remain part of accountable orchestration.
+  - Distributed business-side building capability can coexist with central platform guardrails.
+boundaries:
+  - The visual is an editorial operating-model interpretation, not a forecast of a specific organisation structure.
+  - The visual does not identify any employer, vendor, model, private system or proprietary workflow.
+  - The visual does not imply automatic approval, unattended execution or reduced human accountability.
+  - The visual does not claim that managers replace platform, engineering, security, risk or legal specialists.
+audience:
+  - CFOs
+  - CPOs
+  - CIOs
+  - Transformation leaders
+  - Senior functional managers
+creation_method: original_svg
+contributor: OpenAI ChatGPT under owner direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: true
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: "2026-08-13"
