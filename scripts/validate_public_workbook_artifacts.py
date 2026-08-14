@@ -62,9 +62,12 @@ REQUIRED_PARTS = (
 )
 UNSUPPORTED_WORKBOOK_EXTENSIONS = {
     ".xls",
+    ".xla",
+    ".xlb",
     ".xlsb",
     ".xlsm",
     ".xlam",
+    ".xll",
     ".xlt",
     ".xltm",
     ".xltx",
