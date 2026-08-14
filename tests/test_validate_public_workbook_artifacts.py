@@ -114,6 +114,24 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("missing_relationship_target" in item for item in result["findings"]))
 
+    def test_noncanonical_worksheet_relationship_target_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/_rels/workbook.xml.rels"] = (
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+            'Target="/xl/payload.xml"/>'
+            '</Relationships>'
+        )
+        members["xl/payload.xml"] = (
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>'
+        )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("invalid_worksheet_relationship_target:xl/payload.xml" in item for item in result["findings"])
+        )
+
     def test_duplicate_case_colliding_package_parts_are_rejected(self) -> None:
         temp_dir = Path(tempfile.mkdtemp())
         path = temp_dir / "test.xlsx"
@@ -134,6 +152,15 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
         self.assertTrue(any("unsafe_package_part_name" in item for item in result["findings"]))
+
+    def test_arbitrary_binary_package_part_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/payload.bin"] = b"arbitrary-binary-payload"
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("non_xml_package_part_not_allowed:xl/payload.bin" in item for item in result["findings"])
+        )
 
     def test_vba_payload_is_rejected(self) -> None:
         members = self._safe_members()
@@ -192,9 +219,7 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         )
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
-        self.assertTrue(
-            any("absolute_uri" in item for item in result["findings"])
-        )
+        self.assertTrue(any("absolute_uri" in item for item in result["findings"]))
 
     def test_malformed_relationship_xml_is_rejected(self) -> None:
         members = self._safe_members()
@@ -249,9 +274,7 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         )
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
-        self.assertTrue(
-            any("formula_not_allowed:definedName" in item for item in result["findings"])
-        )
+        self.assertTrue(any("formula_not_allowed:definedName" in item for item in result["findings"]))
 
     def test_dde_formula_is_rejected_by_formula_free_profile(self) -> None:
         members = self._safe_members()
@@ -275,8 +298,19 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         )
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
+        self.assertTrue(any("hidden_sheet_not_allowed:veryhidden" in item for item in result["findings"]))
+
+    def test_hidden_row_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/worksheets/sheet1.xml"] = (
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<sheetData><row r="1" hidden="1"><c r="A1" t="inlineStr"><is><t>hidden</t></is></c></row></sheetData>'
+            '</worksheet>'
+        )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
         self.assertTrue(
-            any("hidden_sheet_not_allowed:veryhidden" in item for item in result["findings"])
+            any("hidden_worksheet_content_not_allowed:row" in item for item in result["findings"])
         )
 
     def test_private_identifier_marker_is_rejected(self) -> None:
@@ -352,9 +386,7 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         ):
             result = validate_xlsx(path)
         self.assertFalse(result["ok"])
-        self.assertTrue(
-            any("member_uncompressed_size_limit" in item for item in result["findings"])
-        )
+        self.assertTrue(any("member_uncompressed_size_limit" in item for item in result["findings"]))
 
 
 if __name__ == "__main__":
