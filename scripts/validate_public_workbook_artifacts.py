@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -36,6 +37,10 @@ NETWORK_FORMULA_MARKERS = (
     "RTD(",
     "STOCKHISTORY(",
 )
+DDE_FORMULA_RE = re.compile(
+    r"^\s*[=+\-@]?\s*[A-Za-z0-9_.\\/:-]+\|.+!",
+    re.IGNORECASE,
+)
 FORMULA_ELEMENT_NAMES = {"f", "definedName"}
 MAX_ARCHIVE_ENTRIES = 2048
 MAX_MEMBER_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
@@ -66,10 +71,13 @@ def _network_formula(root: ET.Element) -> str | None:
     for element in root.iter():
         if _local_name(element.tag) not in FORMULA_ELEMENT_NAMES:
             continue
-        formula = "".join(element.itertext()).upper()
+        formula = "".join(element.itertext()).strip()
+        upper_formula = formula.upper()
         for marker in NETWORK_FORMULA_MARKERS:
-            if marker in formula:
+            if marker in upper_formula:
                 return marker.rstrip("(").lower()
+        if DDE_FORMULA_RE.match(formula):
+            return "dde"
     return None
 
 
