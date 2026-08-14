@@ -87,6 +87,28 @@ UNSUPPORTED_WORKBOOK_EXTENSIONS = {
     ".wk4",
     ".wks",
 }
+INDEXED_BASE_COLORS = {
+    0: "000000",
+    1: "FFFFFF",
+    2: "FF0000",
+    3: "00FF00",
+    4: "0000FF",
+    5: "FFFF00",
+    6: "FF00FF",
+    7: "00FFFF",
+    8: "000000",
+    9: "FFFFFF",
+    10: "FF0000",
+    11: "00FF00",
+    12: "0000FF",
+    13: "FFFF00",
+    14: "FF00FF",
+    15: "00FFFF",
+}
+THEME_BASE_COLORS = {
+    "0": "FFFFFF",
+    "1": "000000",
+}
 XML_DECLARATION_MARKERS = (b"<!doctype", b"<!entity")
 TEXT_CONTAINER_NAMES = {"si", "is", "text", "definedName", "f", "t"}
 MAX_ARCHIVE_ENTRIES = 2048
@@ -208,10 +230,30 @@ def _formula_profile_violation(root: ET.Element) -> str | None:
 def _color_descriptor(element: ET.Element | None) -> tuple[str, str] | None:
     if element is None:
         return None
-    for key in ("rgb", "theme", "indexed"):
-        value = element.attrib.get(key)
-        if value is not None:
-            return key, value.strip().upper()
+
+    rgb = element.attrib.get("rgb")
+    if rgb is not None:
+        value = rgb.strip().upper()
+        return "rgb", value[-6:] if len(value) >= 6 else value
+
+    theme = element.attrib.get("theme")
+    if theme is not None:
+        value = theme.strip()
+        if value in THEME_BASE_COLORS:
+            return "rgb", THEME_BASE_COLORS[value]
+        return "theme", value.upper()
+
+    indexed = element.attrib.get("indexed")
+    if indexed is not None:
+        value = indexed.strip()
+        try:
+            index = int(value)
+        except ValueError:
+            return "indexed", value.upper()
+        if index in INDEXED_BASE_COLORS:
+            return "rgb", INDEXED_BASE_COLORS[index]
+        return "indexed", str(index)
+
     return None
 
 
@@ -241,8 +283,7 @@ def _is_light_background_color(color: tuple[str, str] | None) -> bool:
     if kind == "indexed":
         return value in {"1", "9"}
     if kind == "rgb":
-        normalized = value[-6:]
-        return normalized == "FFFFFF"
+        return value[-6:] == "FFFFFF"
     return False
 
 
