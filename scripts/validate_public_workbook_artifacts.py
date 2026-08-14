@@ -86,16 +86,6 @@ UNSUPPORTED_WORKBOOK_EXTENSIONS = {
     ".wk3",
     ".wk4",
     ".wks",
-    ".xls",
-    ".xla",
-    ".xlb",
-    ".xlsb",
-    ".xlsm",
-    ".xlam",
-    ".xll",
-    ".xlt",
-    ".xltm",
-    ".xltx",
 }
 XML_DECLARATION_MARKERS = (b"<!doctype", b"<!entity")
 TEXT_CONTAINER_NAMES = {"si", "is", "text", "definedName", "f", "t"}
@@ -113,11 +103,19 @@ def _xlsx_files(root: Path) -> list[Path]:
     )
 
 
+def _unsupported_spreadsheet_suffix(suffix: str) -> bool:
+    normalized = suffix.lower()
+    return (
+        normalized in UNSUPPORTED_WORKBOOK_EXTENSIONS
+        or (normalized.startswith(".xl") and normalized != ".xlsx")
+    )
+
+
 def _unsupported_workbook_files(root: Path) -> list[Path]:
     return sorted(
         path
         for path in root.rglob("*")
-        if path.is_file() and path.suffix.lower() in UNSUPPORTED_WORKBOOK_EXTENSIONS
+        if path.is_file() and _unsupported_spreadsheet_suffix(path.suffix)
     )
 
 
@@ -207,13 +205,82 @@ def _formula_profile_violation(root: ET.Element) -> str | None:
     return None
 
 
+def _color_descriptor(element: ET.Element | None) -> tuple[str, str] | None:
+    if element is None:
+        return None
+    for key in ("rgb", "theme", "indexed"):
+        value = element.attrib.get(key)
+        if value is not None:
+            return key, value.strip().upper()
+    return None
+
+
+def _font_color(font: ET.Element) -> tuple[str, str] | None:
+    colors = _direct_children(font, SPREADSHEET_NS, "color")
+    return _color_descriptor(colors[0]) if colors else None
+
+
+def _fill_color(fill: ET.Element) -> tuple[str, str] | None:
+    pattern_fills = _direct_children(fill, SPREADSHEET_NS, "patternFill")
+    if not pattern_fills:
+        return None
+    pattern_fill = pattern_fills[0]
+    pattern_type = pattern_fill.attrib.get("patternType", "").strip().lower()
+    if pattern_type not in {"solid"}:
+        return None
+    colors = _direct_children(pattern_fill, SPREADSHEET_NS, "fgColor")
+    return _color_descriptor(colors[0]) if colors else None
+
+
+def _is_light_background_color(color: tuple[str, str] | None) -> bool:
+    if color is None:
+        return True
+    kind, value = color
+    if kind == "theme":
+        return value == "0"
+    if kind == "indexed":
+        return value in {"1", "9"}
+    if kind == "rgb":
+        normalized = value[-6:]
+        return normalized == "FFFFFF"
+    return False
+
+
 def _style_profile_violation(root: ET.Element) -> str | None:
     namespace, local = _split_tag(root.tag)
     if (namespace, local) != (SPREADSHEET_NS, "styleSheet"):
         return None
+
     num_fmts = _direct_children(root, SPREADSHEET_NS, "numFmts")
     if any(_direct_children(container, SPREADSHEET_NS, "numFmt") for container in num_fmts):
         return "custom_number_format"
+
+    fonts_containers = _direct_children(root, SPREADSHEET_NS, "fonts")
+    fills_containers = _direct_children(root, SPREADSHEET_NS, "fills")
+    cell_xfs_containers = _direct_children(root, SPREADSHEET_NS, "cellXfs")
+    if not fonts_containers or not fills_containers or not cell_xfs_containers:
+        return None
+
+    fonts = _direct_children(fonts_containers[0], SPREADSHEET_NS, "font")
+    fills = _direct_children(fills_containers[0], SPREADSHEET_NS, "fill")
+    cell_xfs = _direct_children(cell_xfs_containers[0], SPREADSHEET_NS, "xf")
+    font_colors = [_font_color(font) for font in fonts]
+    fill_colors = [_fill_color(fill) for fill in fills]
+
+    for xf in cell_xfs:
+        try:
+            font_id = int(xf.attrib.get("fontId", "0"))
+            fill_id = int(xf.attrib.get("fillId", "0"))
+        except ValueError:
+            continue
+        if not (0 <= font_id < len(font_colors)):
+            continue
+        font_color = font_colors[font_id]
+        fill_color = fill_colors[fill_id] if 0 <= fill_id < len(fill_colors) else None
+        if font_color is not None and fill_color is not None and font_color == fill_color:
+            return "font_matches_fill"
+        if _is_light_background_color(fill_color) and _is_light_background_color(font_color) and font_color is not None:
+            return "light_font_on_light_background"
     return None
 
 
