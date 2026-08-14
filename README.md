@@ -60,7 +60,9 @@ Working artifacts must:
 - state material mutation and approval rules explicitly;
 - be validated before release and retain validation evidence where useful.
 
-The current public XLSX profile is intentionally **formula-free and visible-sheet-only**. It treats the workbook as an inspectable declarative container while an external AI assistant performs reasoning and execution. A future artifact that genuinely needs formulas, hidden sheets, macros, add-ins, or other active workbook features requires a separately reviewed typed profile rather than weakening this baseline gate.
+The current Portable AI Harness uses a deliberately narrow public XLSX profile: **standard `.xlsx`, formula-free, visible-content, and XML-only inside the OOXML package**. It rejects hidden sheets, hidden rows or columns, formula/defined-name expressions, binary or media package parts, custom XML payloads, active relationship types, non-canonical worksheet targets, and external/network relationships. It also validates the core OOXML roots, content types, and workbook-to-worksheet relationship graph.
+
+This profile treats the workbook as an inspectable declarative container while an external AI assistant performs reasoning and execution. It is a typed MVP profile, not a universal Excel rule. A future artifact that genuinely needs formulas, media, hidden content, macros, add-ins, or other active workbook features requires a separately reviewed validation profile rather than weakening this baseline gate.
 
 A working artifact can be experimental. The README and manifest must say so clearly.
 
