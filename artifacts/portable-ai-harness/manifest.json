@@ -1,0 +1,34 @@
+{
+  "artifact_id": "portable-ai-harness",
+  "artifact_type": "portable_ai_harness",
+  "schema_version": "1.0",
+  "status": "experimental",
+  "recommended_version": "0.2",
+  "recommended_version_state": "candidate_for_cross_provider_testing",
+  "runtime_model": "external_llm_or_ai_assistant",
+  "container_model": "versioned_xlsx_plus_bootstrap_contract",
+  "mutation_policy": "material_changes_require_user_approval",
+  "version_policy": "released_version_folders_are_immutable",
+  "versions": [
+    {
+      "version": "0.1",
+      "state": "baseline",
+      "files": {
+        "workbook": {"path": "v0.1/portable-ai-harness-v0.1.xlsx", "sha256": "f0bc42fa0a533e1876209cef648494bc0239a0f06e09aa5f3c905e36d4f5d3ec"},
+        "bootstrap": {"path": "v0.1/portable-ai-harness-bootstrap-v0.1.md", "sha256": "a93b995725591d8c7c42d44da2b0aeb824b0c178d9446698bd988ae924df5757"},
+        "experiment_protocol": {"path": "v0.1/portable-ai-harness-experiment-protocol-v0.1.md", "sha256": "b6f2b71954919b29f1c61a99bd7f2b882476e3ee3fdeaf72e72ed2d493592934"},
+        "structural_scan": {"path": "v0.1/portable-ai-harness-v0.1-scan.json", "sha256": "7c24b5bc0d4e8c4e9c60f143b69cc136f0d3a9bdeab83343f1229fe09fd4f1f0"}
+      }
+    },
+    {
+      "version": "0.2",
+      "state": "candidate_for_cross_provider_testing",
+      "files": {
+        "workbook": {"path": "v0.2/portable-ai-harness-v0.2.xlsx", "sha256": "cca3282693f32925ed2e35349b8a6974eb10a74288eeea32d0fd157664ce5ca0"},
+        "bootstrap": {"path": "v0.2/portable-ai-harness-bootstrap-v0.2.md", "sha256": "bc0c14718ce93339984e4c8bc1e07abb0f84922fcd9a5f3ec070cb08a9562227"},
+        "experiment_protocol": {"path": "v0.2/portable-ai-harness-experiment-protocol-v0.2.md", "sha256": "68b79ef9ce70f4236f5628228918804fca094c7cefc3a1e2e7d66b3e80b5a6f9"},
+        "structural_scan": {"path": "v0.2/portable-ai-harness-v0.2-scan.json", "sha256": "02632f3b14c214e7df4bdac203d92577bb06c6ed591f8789bec6365145892c8e"}
+      }
+    }
+  ]
+}
