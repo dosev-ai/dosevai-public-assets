@@ -4,11 +4,22 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import re
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
+CONTENT_TYPES_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
+PACKAGE_RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
+SPREADSHEET_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+WORKBOOK_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
+)
+WORKSHEET_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"
+)
 FORBIDDEN_PART_MARKERS = (
     "vbaproject.bin",
     "/activex/",
@@ -23,6 +34,16 @@ FORBIDDEN_PART_MARKERS = (
     "/taskpanes/",
     "/taskpanes.xml",
 )
+FORBIDDEN_RELATIONSHIP_TYPE_TAILS = {
+    "control",
+    "ctrlprop",
+    "externallink",
+    "oleobject",
+    "package",
+    "taskpane",
+    "vbaproject",
+    "webextension",
+}
 FORBIDDEN_TEXT_MARKERS = ("cortex://",)
 PRIVATE_ID_RE = re.compile(
     r"\b(?:action|project|fact)-\d{10,}[A-Za-z0-9-]*\b",
@@ -68,8 +89,15 @@ def _unsupported_workbook_files(root: Path) -> list[Path]:
     )
 
 
+def _split_tag(tag: str) -> tuple[str, str]:
+    if tag.startswith("{") and "}" in tag:
+        namespace, local = tag[1:].split("}", 1)
+        return namespace, local
+    return "", tag
+
+
 def _local_name(tag: str) -> str:
-    return tag.rsplit("}", 1)[-1]
+    return _split_tag(tag)[1]
 
 
 def _normalized_part_name(name: str) -> str:
@@ -87,13 +115,32 @@ def _unsafe_part_name(name: str) -> bool:
     )
 
 
-def _external_relationship_reason(root: ET.Element) -> str | None:
+def _relationship_type_tail(type_uri: str) -> str:
+    return type_uri.rstrip("/").rsplit("/", 1)[-1].lower()
+
+
+def _relationship_records(root: ET.Element) -> list[tuple[str, str, str, str]]:
+    records: list[tuple[str, str, str, str]] = []
     for rel in root.iter():
         if _local_name(rel.tag) != "Relationship":
             continue
-        target_mode = rel.attrib.get("TargetMode", "").strip().lower()
-        target = rel.attrib.get("Target", "").strip()
-        if target_mode == "external":
+        records.append(
+            (
+                rel.attrib.get("Id", "").strip(),
+                rel.attrib.get("Type", "").strip(),
+                rel.attrib.get("Target", "").strip(),
+                rel.attrib.get("TargetMode", "").strip(),
+            )
+        )
+    return records
+
+
+def _relationship_violation(root: ET.Element) -> str | None:
+    for _, type_uri, target, target_mode in _relationship_records(root):
+        type_tail = _relationship_type_tail(type_uri)
+        if type_tail in FORBIDDEN_RELATIONSHIP_TYPE_TAILS:
+            return f"active_type:{type_tail}"
+        if target_mode.lower() == "external":
             return "target_mode"
         if target.startswith(("//", "\\\\")):
             return "network_path"
@@ -132,12 +179,131 @@ def _normalized_text(data: bytes, parsed_root: ET.Element | None) -> str:
         ]
         chunks.append("".join(parsed_root.itertext()))
         return "\n".join(chunks).lower().replace("\x00", "")
-    return data.decode("utf-8", errors="ignore").lower().replace("\x00", "")
+    return data.decode("latin-1", errors="ignore").lower().replace("\x00", "")
+
+
+def _private_findings(text: str, location: str) -> list[str]:
+    findings: list[str] = []
+    for marker in FORBIDDEN_TEXT_MARKERS:
+        if marker in text:
+            findings.append(f"private_identifier_marker:{marker}:{location}")
+    for match in PRIVATE_ID_RE.finditer(text):
+        findings.append(f"private_identifier_pattern:{match.group(0)}:{location}")
+    return findings
 
 
 def _has_forbidden_xml_declaration(data: bytes) -> bool:
     probe = data.lower().replace(b"\x00", b"")
     return any(marker in probe for marker in XML_DECLARATION_MARKERS)
+
+
+def _expected_root_finding(part_name: str, root: ET.Element) -> str | None:
+    namespace, local = _split_tag(root.tag)
+    if part_name == "[content_types].xml":
+        expected = (CONTENT_TYPES_NS, "Types")
+    elif part_name in ("_rels/.rels", "xl/_rels/workbook.xml.rels"):
+        expected = (PACKAGE_RELS_NS, "Relationships")
+    elif part_name == "xl/workbook.xml":
+        expected = (SPREADSHEET_NS, "workbook")
+    elif part_name.startswith("xl/worksheets/") and part_name.endswith(".xml"):
+        expected = (SPREADSHEET_NS, "worksheet")
+    else:
+        return None
+    if (namespace, local) != expected:
+        return f"invalid_ooxml_root:{part_name}:{namespace}:{local}"
+    return None
+
+
+def _resolve_internal_target(source_part: str, target: str) -> str:
+    normalized_target = target.replace("\\", "/")
+    if normalized_target.startswith("/"):
+        return normalized_target.lstrip("/").lower()
+    base_dir = posixpath.dirname(source_part)
+    return posixpath.normpath(posixpath.join(base_dir, normalized_target)).lower()
+
+
+def _validate_content_types(
+    root: ET.Element | None,
+    package_parts: set[str],
+) -> list[str]:
+    if root is None:
+        return []
+    overrides: dict[str, str] = {}
+    for element in root.iter():
+        if _local_name(element.tag) != "Override":
+            continue
+        part_name = element.attrib.get("PartName", "").lstrip("/").lower()
+        content_type = element.attrib.get("ContentType", "")
+        overrides[part_name] = content_type
+    findings: list[str] = []
+    if overrides.get("xl/workbook.xml") != WORKBOOK_CONTENT_TYPE:
+        findings.append("invalid_content_type:xl/workbook.xml")
+    worksheet_parts = sorted(
+        part
+        for part in package_parts
+        if part.startswith("xl/worksheets/") and part.endswith(".xml")
+    )
+    for worksheet_part in worksheet_parts:
+        if overrides.get(worksheet_part) != WORKSHEET_CONTENT_TYPE:
+            findings.append(f"invalid_content_type:{worksheet_part}")
+    return findings
+
+
+def _validate_relationship_graph(
+    parsed_parts: dict[str, ET.Element],
+    package_parts: set[str],
+) -> list[str]:
+    findings: list[str] = []
+    root_rels = parsed_parts.get("_rels/.rels")
+    if root_rels is not None:
+        office_targets = [
+            target
+            for _, type_uri, target, _ in _relationship_records(root_rels)
+            if _relationship_type_tail(type_uri) == "officedocument"
+        ]
+        if not any(
+            _resolve_internal_target("", target) == "xl/workbook.xml"
+            for target in office_targets
+        ):
+            findings.append("missing_office_document_relationship:xl/workbook.xml")
+
+    workbook_rels = parsed_parts.get("xl/_rels/workbook.xml.rels")
+    worksheet_by_id: dict[str, str] = {}
+    if workbook_rels is not None:
+        for rel_id, type_uri, target, target_mode in _relationship_records(workbook_rels):
+            if _relationship_type_tail(type_uri) != "worksheet":
+                continue
+            if target_mode.lower() == "external":
+                continue
+            resolved = _resolve_internal_target("xl/workbook.xml", target)
+            worksheet_by_id[rel_id] = resolved
+            if resolved not in package_parts:
+                findings.append(f"missing_relationship_target:{resolved}")
+        if not worksheet_by_id:
+            findings.append("missing_workbook_worksheet_relationship")
+
+    workbook_root = parsed_parts.get("xl/workbook.xml")
+    if workbook_root is not None:
+        sheet_rel_ids: list[str] = []
+        for element in workbook_root.iter():
+            if _local_name(element.tag) != "sheet":
+                continue
+            rel_id = ""
+            for key, value in element.attrib.items():
+                namespace, local = _split_tag(key)
+                if local == "id" and namespace == OFFICE_REL_NS:
+                    rel_id = value
+                    break
+            if not rel_id:
+                findings.append("sheet_missing_relationship_id")
+            else:
+                sheet_rel_ids.append(rel_id)
+        if not sheet_rel_ids:
+            findings.append("workbook_has_no_sheets")
+        for rel_id in sheet_rel_ids:
+            if rel_id not in worksheet_by_id:
+                findings.append(f"sheet_relationship_not_found:{rel_id}")
+    return findings
 
 
 def validate_xlsx(path: Path) -> dict[str, object]:
@@ -150,6 +316,13 @@ def validate_xlsx(path: Path) -> dict[str, object]:
             lowered_set = set(lowered)
             normalized_names = [_normalized_part_name(name) for name in names]
 
+            findings.extend(
+                _private_findings(
+                    _normalized_text(archive.comment, None),
+                    "archive_comment",
+                )
+            )
+
             if len(normalized_names) != len(set(normalized_names)):
                 seen: set[str] = set()
                 duplicates: set[str] = set()
@@ -160,9 +333,17 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                 for duplicate in sorted(duplicates):
                     findings.append(f"duplicate_or_case_colliding_part:{duplicate}")
 
-            for name in names:
-                if _unsafe_part_name(name):
-                    findings.append(f"unsafe_package_part_name:{name}")
+            for info in infos:
+                if _unsafe_part_name(info.filename):
+                    findings.append(f"unsafe_package_part_name:{info.filename}")
+                metadata_text = "\n".join(
+                    (
+                        info.filename.lower().replace("\x00", ""),
+                        _normalized_text(info.comment, None),
+                        _normalized_text(info.extra, None),
+                    )
+                )
+                findings.extend(_private_findings(metadata_text, f"metadata:{info.filename}"))
 
             if len(infos) > MAX_ARCHIVE_ENTRIES:
                 findings.append(f"too_many_archive_entries:{len(infos)}")
@@ -210,13 +391,21 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                     "findings": sorted(set(findings)),
                 }
 
+            parsed_parts: dict[str, ET.Element] = {}
             for name in names:
                 if name in unsafe_members:
                     continue
 
                 lower_name = name.lower()
-                data = archive.read(name)
+                try:
+                    data = archive.read(name)
+                except (RuntimeError, zipfile.BadZipFile, OSError, KeyError) as exc:
+                    findings.append(f"unreadable_package_part:{name}:{type(exc).__name__}")
+                    continue
+
                 parsed_root: ET.Element | None = None
+                raw_text = _normalized_text(data, None)
+                findings.extend(_private_findings(raw_text, name))
 
                 if lower_name.endswith((".xml", ".rels")):
                     if _has_forbidden_xml_declaration(data):
@@ -224,13 +413,19 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                     else:
                         try:
                             parsed_root = ET.fromstring(data)
+                            parsed_parts[lower_name] = parsed_root
+                            root_finding = _expected_root_finding(lower_name, parsed_root)
+                            if root_finding:
+                                findings.append(root_finding)
                         except ET.ParseError:
                             findings.append(f"invalid_xml:{name}")
 
                 if lower_name.endswith(".rels") and parsed_root is not None:
-                    external_reason = _external_relationship_reason(parsed_root)
-                    if external_reason:
-                        findings.append(f"external_relationship:{external_reason}:{name}")
+                    relationship_violation = _relationship_violation(parsed_root)
+                    if relationship_violation:
+                        findings.append(
+                            f"external_or_active_relationship:{relationship_violation}:{name}"
+                        )
 
                 if parsed_root is not None:
                     formula_violation = _formula_profile_violation(parsed_root)
@@ -245,17 +440,16 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                         findings.append(f"hidden_sheet_not_allowed:{hidden_state}:{name}")
 
                 if lower_name.endswith((".xml", ".rels", ".txt")):
-                    text = _normalized_text(data, parsed_root)
-                    for marker in FORBIDDEN_TEXT_MARKERS:
-                        if marker in text:
-                            findings.append(
-                                f"private_identifier_marker:{marker}:{name}"
-                            )
-                    private_id = PRIVATE_ID_RE.search(text)
-                    if private_id:
-                        findings.append(
-                            f"private_identifier_pattern:{private_id.group(0)}:{name}"
-                        )
+                    normalized = _normalized_text(data, parsed_root)
+                    findings.extend(_private_findings(normalized, name))
+
+            findings.extend(
+                _validate_content_types(
+                    parsed_parts.get("[content_types].xml"),
+                    lowered_set,
+                )
+            )
+            findings.extend(_validate_relationship_graph(parsed_parts, lowered_set))
     except zipfile.BadZipFile:
         findings.append("invalid_xlsx_zip")
 
