@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+import shutil
 import tempfile
 import unittest
 import zipfile
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.validate_public_workbook_artifacts import _xlsx_files, validate_xlsx
+from scripts.validate_public_workbook_artifacts import (
+    _unsupported_workbook_files,
+    _xlsx_files,
+    main,
+    validate_xlsx,
+)
 
 
 class PublicWorkbookValidationTests(unittest.TestCase):
@@ -50,6 +58,17 @@ class PublicWorkbookValidationTests(unittest.TestCase):
             upper.write_bytes(b"placeholder")
             self.assertEqual(_xlsx_files(root), [upper])
 
+    def test_macro_enabled_extension_fails_gate(self) -> None:
+        safe_source = self._write_zip(self._safe_members())
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            shutil.copyfile(safe_source, root / "safe.xlsx")
+            macro = root / "unsafe.xlsm"
+            macro.write_bytes(b"placeholder")
+            self.assertEqual(_unsupported_workbook_files(root), [macro])
+            with redirect_stdout(StringIO()):
+                self.assertEqual(main(["--root", str(root), "--format", "json"]), 2)
+
     def test_missing_core_part_is_rejected(self) -> None:
         members = self._safe_members()
         del members["xl/workbook.xml"]
@@ -81,6 +100,18 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
         self.assertTrue(any("invalid_xml" in item for item in result["findings"]))
+
+    def test_doctype_xml_is_rejected_before_parse(self) -> None:
+        members = self._safe_members()
+        members["xl/sharedStrings.xml"] = (
+            '<!DOCTYPE sst [<!ENTITY x "unsafe">]>'
+            '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<si><t>&x;</t></si>'
+            '</sst>'
+        )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("forbidden_xml_declaration" in item for item in result["findings"]))
 
     def test_network_capable_formula_is_rejected(self) -> None:
         members = self._safe_members()
@@ -124,6 +155,17 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         members["xl/sharedStrings.xml"] = (
             '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
             '<si><t>cortex://private-doc</t></si>'
+            '</sst>'
+        )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("private_identifier_marker" in item for item in result["findings"]))
+
+    def test_rich_text_private_identifier_marker_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/sharedStrings.xml"] = (
+            '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<si><r><t>cortex:</t></r><r><t>//private-doc</t></r></si>'
             '</sst>'
         )
         result = validate_xlsx(self._write_zip(members))
