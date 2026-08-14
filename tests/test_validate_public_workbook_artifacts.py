@@ -107,6 +107,18 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("network_capable_formula:webservice" in item for item in result["findings"]))
 
+    def test_dde_formula_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/worksheets/sheet1.xml"] = (
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<sheetData><row r="1"><c r="A1"><f>cmd|\'/C calc\'!A0</f>'
+            '<v>0</v></c></row></sheetData>'
+            '</worksheet>'
+        )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("network_capable_formula:dde" in item for item in result["findings"]))
+
     def test_private_identifier_marker_is_rejected(self) -> None:
         members = self._safe_members()
         members["xl/sharedStrings.xml"] = (
