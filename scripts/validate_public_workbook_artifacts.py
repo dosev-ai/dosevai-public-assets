@@ -28,6 +28,7 @@ FORBIDDEN_PART_MARKERS = (
     "/externallinks/",
     "/connections.xml",
     "/customui/",
+    "/customxml/",
     "/macrosheets/",
     "/webextensions/",
     "/webextensions.xml",
@@ -35,15 +36,18 @@ FORBIDDEN_PART_MARKERS = (
     "/taskpanes.xml",
 )
 FORBIDDEN_RELATIONSHIP_TYPE_TAILS = {
+    "connections",
     "control",
     "ctrlprop",
     "externallink",
     "oleobject",
     "package",
+    "querytable",
     "taskpane",
     "vbaproject",
     "webextension",
 }
+ALLOWED_PACKAGE_EXTENSIONS = {".xml", ".rels"}
 FORBIDDEN_TEXT_MARKERS = ("cortex://",)
 PRIVATE_ID_RE = re.compile(
     r"\b(?:action|project|fact)-\d{10,}[A-Za-z0-9-]*\b",
@@ -144,6 +148,8 @@ def _relationship_violation(root: ET.Element) -> str | None:
             return "target_mode"
         if target.startswith(("//", "\\\\")):
             return "network_path"
+        if "\\" in target or "\x00" in target:
+            return "unsafe_target_syntax"
         if EXTERNAL_TARGET_RE.match(target):
             return "absolute_uri"
     return None
@@ -167,6 +173,20 @@ def _hidden_sheet_state(root: ET.Element) -> str | None:
         state = element.attrib.get("state", "visible").strip().lower()
         if state not in ("", "visible"):
             return state
+    return None
+
+
+def _hidden_worksheet_content(root: ET.Element) -> str | None:
+    for element in root.iter():
+        local = _local_name(element.tag)
+        if local in {"row", "col"}:
+            hidden = element.attrib.get("hidden", "").strip().lower()
+            if hidden in {"1", "true"}:
+                return local
+        if local == "sheetFormatPr":
+            zero_height = element.attrib.get("zeroHeight", "").strip().lower()
+            if zero_height in {"1", "true"}:
+                return "default_rows"
     return None
 
 
@@ -277,6 +297,11 @@ def _validate_relationship_graph(
                 continue
             resolved = _resolve_internal_target("xl/workbook.xml", target)
             worksheet_by_id[rel_id] = resolved
+            if not (
+                resolved.startswith("xl/worksheets/")
+                and resolved.endswith(".xml")
+            ):
+                findings.append(f"invalid_worksheet_relationship_target:{resolved}")
             if resolved not in package_parts:
                 findings.append(f"missing_relationship_target:{resolved}")
         if not worksheet_by_id:
@@ -336,6 +361,12 @@ def validate_xlsx(path: Path) -> dict[str, object]:
             for info in infos:
                 if _unsafe_part_name(info.filename):
                     findings.append(f"unsafe_package_part_name:{info.filename}")
+                if not info.filename.endswith("/"):
+                    extension = posixpath.splitext(info.filename)[1].lower()
+                    if extension not in ALLOWED_PACKAGE_EXTENSIONS:
+                        findings.append(
+                            f"non_xml_package_part_not_allowed:{info.filename}"
+                        )
                 metadata_text = "\n".join(
                     (
                         info.filename.lower().replace("\x00", ""),
@@ -438,6 +469,17 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                     hidden_state = _hidden_sheet_state(parsed_root)
                     if hidden_state:
                         findings.append(f"hidden_sheet_not_allowed:{hidden_state}:{name}")
+
+                if (
+                    lower_name.startswith("xl/worksheets/")
+                    and lower_name.endswith(".xml")
+                    and parsed_root is not None
+                ):
+                    hidden_content = _hidden_worksheet_content(parsed_root)
+                    if hidden_content:
+                        findings.append(
+                            f"hidden_worksheet_content_not_allowed:{hidden_content}:{name}"
+                        )
 
                 if lower_name.endswith((".xml", ".rels", ".txt")):
                     normalized = _normalized_text(data, parsed_root)
