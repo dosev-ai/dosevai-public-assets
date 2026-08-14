@@ -98,16 +98,45 @@ class PublicWorkbookFinalEdgeCasesTests(unittest.TestCase):
         result = self._validate(members)
         self.assertFalse(result["ok"])
         self.assertTrue(
-            any("display_suppressing_style_not_allowed:custom_number_format" in finding for finding in result["findings"])
+            any(
+                "display_suppressing_style_not_allowed:custom_number_format"
+                in finding
+                for finding in result["findings"]
+            )
         )
 
-    def test_open_document_spreadsheet_extensions_are_explicitly_rejected(self) -> None:
+    def test_non_xlsx_spreadsheet_and_query_formats_are_explicitly_rejected(self) -> None:
+        suffixes = {
+            ".123",
+            ".csv",
+            ".dbf",
+            ".dif",
+            ".dqy",
+            ".fods",
+            ".gnumeric",
+            ".iqy",
+            ".numbers",
+            ".odc",
+            ".ods",
+            ".oqy",
+            ".ots",
+            ".prn",
+            ".rqy",
+            ".slk",
+            ".sxc",
+            ".tsv",
+            ".wk1",
+            ".wk2",
+            ".wk3",
+            ".wk4",
+            ".wks",
+        }
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            for suffix in (".ods", ".ots", ".fods", ".sxc"):
+            for suffix in suffixes:
                 (root / f"unsafe{suffix}").write_bytes(b"not-a-public-xlsx")
             found = {path.suffix.lower() for path in _unsupported_workbook_files(root)}
-        self.assertEqual(found, {".ods", ".ots", ".fods", ".sxc"})
+        self.assertEqual(found, suffixes)
 
 
 if __name__ == "__main__":
