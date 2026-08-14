@@ -60,6 +60,8 @@ Working artifacts must:
 - state material mutation and approval rules explicitly;
 - be validated before release and retain validation evidence where useful.
 
+The current public XLSX profile is intentionally **formula-free and visible-sheet-only**. It treats the workbook as an inspectable declarative container while an external AI assistant performs reasoning and execution. A future artifact that genuinely needs formulas, hidden sheets, macros, add-ins, or other active workbook features requires a separately reviewed typed profile rather than weakening this baseline gate.
+
 A working artifact can be experimental. The README and manifest must say so clearly.
 
 ## Structure
