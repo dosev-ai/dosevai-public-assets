@@ -259,7 +259,9 @@ def _color_descriptor(element: ET.Element | None) -> tuple[str, str] | None:
 
 def _font_color(font: ET.Element) -> tuple[str, str] | None:
     colors = _direct_children(font, SPREADSHEET_NS, "color")
-    return _color_descriptor(colors[0]) if colors else None
+    if not colors:
+        return "rgb", "000000"
+    return _color_descriptor(colors[0])
 
 
 def _fill_color(fill: ET.Element) -> tuple[str, str] | None:
@@ -272,6 +274,28 @@ def _fill_color(fill: ET.Element) -> tuple[str, str] | None:
         return None
     colors = _direct_children(pattern_fill, SPREADSHEET_NS, "fgColor")
     return _color_descriptor(colors[0]) if colors else None
+
+
+def _nonzero_tint(element: ET.Element) -> bool:
+    tint = element.attrib.get("tint")
+    if tint is None:
+        return False
+    try:
+        return abs(float(tint)) > 1e-12
+    except ValueError:
+        return True
+
+
+def _fill_profile_violation(fill: ET.Element) -> str | None:
+    if _direct_children(fill, SPREADSHEET_NS, "gradientFill"):
+        return "gradient_fill"
+    pattern_fills = _direct_children(fill, SPREADSHEET_NS, "patternFill")
+    if not pattern_fills:
+        return None
+    pattern_type = pattern_fills[0].attrib.get("patternType", "").strip().lower()
+    if pattern_type not in {"", "none", "gray125", "solid"}:
+        return "non_solid_pattern_fill"
+    return None
 
 
 def _is_light_background_color(color: tuple[str, str] | None) -> bool:
@@ -299,6 +323,9 @@ def _style_profile_violation(root: ET.Element) -> str | None:
     if any(_local_name(element.tag) == "dxf" for element in root.iter()):
         return "differential_style"
 
+    if any(_nonzero_tint(element) for element in root.iter()):
+        return "tinted_color"
+
     fonts_containers = _direct_children(root, SPREADSHEET_NS, "fonts")
     fills_containers = _direct_children(root, SPREADSHEET_NS, "fills")
     cell_xfs_containers = _direct_children(root, SPREADSHEET_NS, "cellXfs")
@@ -308,6 +335,11 @@ def _style_profile_violation(root: ET.Element) -> str | None:
     fonts = _direct_children(fonts_containers[0], SPREADSHEET_NS, "font")
     fills = _direct_children(fills_containers[0], SPREADSHEET_NS, "fill")
     cell_xfs = _direct_children(cell_xfs_containers[0], SPREADSHEET_NS, "xf")
+    for fill in fills:
+        fill_violation = _fill_profile_violation(fill)
+        if fill_violation:
+            return fill_violation
+
     font_colors = [_font_color(font) for font in fonts]
     fill_colors = [_fill_color(fill) for fill in fills]
 
