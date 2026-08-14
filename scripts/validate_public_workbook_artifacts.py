@@ -107,6 +107,21 @@ def _local_name(tag: str) -> str:
     return _split_tag(tag)[1]
 
 
+def _direct_children(root: ET.Element, namespace: str, local: str) -> list[ET.Element]:
+    return [
+        child
+        for child in list(root)
+        if _split_tag(child.tag) == (namespace, local)
+    ]
+
+
+def _workbook_sheet_elements(root: ET.Element) -> list[ET.Element]:
+    sheets_containers = _direct_children(root, SPREADSHEET_NS, "sheets")
+    if len(sheets_containers) != 1:
+        return []
+    return _direct_children(sheets_containers[0], SPREADSHEET_NS, "sheet")
+
+
 def _normalized_part_name(name: str) -> str:
     return name.replace("\\", "/").lower()
 
@@ -128,9 +143,7 @@ def _relationship_type_tail(type_uri: str) -> str:
 
 def _relationship_records(root: ET.Element) -> list[tuple[str, str, str, str]]:
     records: list[tuple[str, str, str, str]] = []
-    for rel in root.iter():
-        if _local_name(rel.tag) != "Relationship":
-            continue
+    for rel in _direct_children(root, PACKAGE_RELS_NS, "Relationship"):
         records.append(
             (
                 rel.attrib.get("Id", "").strip(),
@@ -170,13 +183,20 @@ def _formula_profile_violation(root: ET.Element) -> str | None:
 
 
 def _hidden_sheet_state(root: ET.Element) -> str | None:
-    for element in root.iter():
-        if _local_name(element.tag) != "sheet":
-            continue
+    for element in _workbook_sheet_elements(root):
         state = element.attrib.get("state", "visible").strip().lower()
         if state not in ("", "visible"):
             return state
     return None
+
+
+def _zero_or_negative_dimension(value: str) -> bool:
+    if not value.strip():
+        return False
+    try:
+        return float(value) <= 0
+    except ValueError:
+        return False
 
 
 def _hidden_worksheet_content(root: ET.Element) -> str | None:
@@ -185,6 +205,9 @@ def _hidden_worksheet_content(root: ET.Element) -> str | None:
         if local in {"row", "col"}:
             hidden = element.attrib.get("hidden", "").strip().lower()
             if hidden in {"1", "true"}:
+                return local
+            dimension_attr = "ht" if local == "row" else "width"
+            if _zero_or_negative_dimension(element.attrib.get(dimension_attr, "")):
                 return local
         if local == "sheetFormatPr":
             zero_height = element.attrib.get("zeroHeight", "").strip().lower()
@@ -257,9 +280,7 @@ def _validate_content_types(
     if root is None:
         return []
     overrides: dict[str, str] = {}
-    for element in root.iter():
-        if _local_name(element.tag) != "Override":
-            continue
+    for element in _direct_children(root, CONTENT_TYPES_NS, "Override"):
         part_name = element.attrib.get("PartName", "").lstrip("/").lower()
         content_type = element.attrib.get("ContentType", "")
         overrides[part_name] = content_type
@@ -318,9 +339,7 @@ def _validate_relationship_graph(
     workbook_root = parsed_parts.get("xl/workbook.xml")
     if workbook_root is not None:
         sheet_rel_ids: list[str] = []
-        for element in workbook_root.iter():
-            if _local_name(element.tag) != "sheet":
-                continue
+        for element in _workbook_sheet_elements(workbook_root):
             rel_id = ""
             for key, value in element.attrib.items():
                 namespace, local = _split_tag(key)
