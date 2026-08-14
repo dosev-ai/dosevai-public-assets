@@ -21,16 +21,34 @@ class PublicWorkbookValidationTests(unittest.TestCase):
     def _safe_members(self) -> dict[str, str | bytes]:
         return {
             "[Content_Types].xml": (
-                '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>'
+                '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                '<Default Extension="xml" ContentType="application/xml"/>'
+                '<Override PartName="/xl/workbook.xml" '
+                'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                '<Override PartName="/xl/worksheets/sheet1.xml" '
+                'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                '</Types>'
             ),
             "_rels/.rels": (
-                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" '
+                'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
+                'Target="xl/workbook.xml"/>'
+                '</Relationships>'
             ),
             "xl/workbook.xml": (
-                '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>'
+                '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+                'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                '<sheets><sheet name="Sheet1" sheetId="1" state="visible" r:id="rId1"/></sheets>'
+                '</workbook>'
             ),
             "xl/_rels/workbook.xml.rels": (
-                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" '
+                'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+                'Target="/xl/worksheets/sheet1.xml"/>'
+                '</Relationships>'
             ),
             "xl/worksheets/sheet1.xml": (
                 '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
@@ -76,6 +94,26 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("missing_required_part:xl/workbook.xml", result["findings"])
 
+    def test_invalid_ooxml_root_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/workbook.xml"] = '<foo xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>'
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("invalid_ooxml_root:xl/workbook.xml" in item for item in result["findings"]))
+
+    def test_missing_workbook_relationship_target_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/_rels/workbook.xml.rels"] = (
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+            'Target="/xl/worksheets/missing.xml"/>'
+            '</Relationships>'
+        )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("missing_relationship_target" in item for item in result["findings"]))
+
     def test_duplicate_case_colliding_package_parts_are_rejected(self) -> None:
         temp_dir = Path(tempfile.mkdtemp())
         path = temp_dir / "test.xlsx"
@@ -106,33 +144,56 @@ class PublicWorkbookValidationTests(unittest.TestCase):
 
     def test_macro_sheet_part_is_rejected(self) -> None:
         members = self._safe_members()
-        members["xl/macrosheets/sheet1.xml"] = "<worksheet/>"
+        members["xl/macrosheets/sheet1.xml"] = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>'
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
         self.assertTrue(any("forbidden_part" in item for item in result["findings"]))
+
+    def test_active_relationship_type_is_rejected_even_with_disguised_target(self) -> None:
+        members = self._safe_members()
+        members["xl/_rels/workbook.xml.rels"] = (
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+            'Target="/xl/worksheets/sheet1.xml"/>'
+            '<Relationship Id="rId2" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject" '
+            'Target="payload.bin"/>'
+            '</Relationships>'
+        )
+        members["xl/payload.bin"] = b"payload"
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("active_type:oleobject" in item for item in result["findings"])
+        )
 
     def test_external_relationship_is_rejected(self) -> None:
         members = self._safe_members()
         members["xl/_rels/workbook.xml.rels"] = (
             '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            '<Relationship Id="rId1" Type="x" Target="https://example.com" TargetMode="External"/>'
+            '<Relationship Id="rId1" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+            'Target="https://example.com" TargetMode="External"/>'
             '</Relationships>'
         )
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
-        self.assertTrue(any("external_relationship" in item for item in result["findings"]))
+        self.assertTrue(any("external_or_active_relationship" in item for item in result["findings"]))
 
     def test_absolute_uri_relationship_without_target_mode_is_rejected(self) -> None:
         members = self._safe_members()
         members["xl/_rels/workbook.xml.rels"] = (
             '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            '<Relationship Id="rId1" Type="x" Target="https://example.com/payload"/>'
+            '<Relationship Id="rId1" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+            'Target="https://example.com/payload"/>'
             '</Relationships>'
         )
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
         self.assertTrue(
-            any("external_relationship:absolute_uri" in item for item in result["findings"])
+            any("absolute_uri" in item for item in result["findings"])
         )
 
     def test_malformed_relationship_xml_is_rejected(self) -> None:
@@ -165,10 +226,24 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("formula_not_allowed:f" in item for item in result["findings"]))
 
+    def test_xlm_call_formula_is_rejected_by_formula_free_profile(self) -> None:
+        members = self._safe_members()
+        members["xl/worksheets/sheet1.xml"] = (
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<sheetData><row r="1"><c r="A1"><f>CALL("kernel32","WinExec","JJ","calc",1)</f>'
+            '<v>0</v></c></row></sheetData>'
+            '</worksheet>'
+        )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("formula_not_allowed:f" in item for item in result["findings"]))
+
     def test_defined_name_is_rejected_by_formula_free_profile(self) -> None:
         members = self._safe_members()
         members["xl/workbook.xml"] = (
-            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            '<sheets><sheet name="Sheet1" sheetId="1" state="visible" r:id="rId1"/></sheets>'
             '<definedNames><definedName name="NamedRange">Sheet1!$A$1</definedName></definedNames>'
             '</workbook>'
         )
@@ -193,8 +268,9 @@ class PublicWorkbookValidationTests(unittest.TestCase):
     def test_hidden_sheet_is_rejected(self) -> None:
         members = self._safe_members()
         members["xl/workbook.xml"] = (
-            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            '<sheets><sheet name="Hidden" sheetId="1" state="veryHidden"/></sheets>'
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            '<sheets><sheet name="Hidden" sheetId="1" state="veryHidden" r:id="rId1"/></sheets>'
             '</workbook>'
         )
         result = validate_xlsx(self._write_zip(members))
@@ -213,6 +289,24 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
         self.assertTrue(any("private_identifier_marker" in item for item in result["findings"]))
+
+    def test_private_marker_in_non_xml_part_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/media/image1.svg"] = b"metadata:cortex://private-doc"
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("private_identifier_marker" in item for item in result["findings"]))
+
+    def test_private_marker_in_archive_metadata_is_rejected(self) -> None:
+        temp_dir = Path(tempfile.mkdtemp())
+        path = temp_dir / "test.xlsx"
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.comment = b"cortex://private-doc"
+            for name, content in self._safe_members().items():
+                archive.writestr(name, content)
+        result = validate_xlsx(path)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("archive_comment" in item for item in result["findings"]))
 
     def test_private_governance_id_pattern_is_not_timestamp_prefix_specific(self) -> None:
         members = self._safe_members()
