@@ -362,7 +362,12 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                 if _unsafe_part_name(info.filename):
                     findings.append(f"unsafe_package_part_name:{info.filename}")
                 if not info.filename.endswith("/"):
-                    extension = posixpath.splitext(info.filename)[1].lower()
+                    lower_filename = info.filename.lower()
+                    extension = (
+                        ".rels"
+                        if lower_filename.endswith(".rels")
+                        else posixpath.splitext(lower_filename)[1]
+                    )
                     if extension not in ALLOWED_PACKAGE_EXTENSIONS:
                         findings.append(
                             f"non_xml_package_part_not_allowed:{info.filename}"
