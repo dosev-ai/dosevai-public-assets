@@ -6,8 +6,10 @@ on:
       - '.gitignore'
       - 'posts/**'
       - 'fixtures/**'
+      - 'artifacts/**'
       - 'scripts/asset_manifest*.py'
       - 'scripts/validate_changed_asset_manifests.py'
+      - 'scripts/validate_public_workbook_artifacts.py'
       - 'tests/**'
       - 'requirements.txt'
       - '.github/workflows/validate-governed-assets.yml'
@@ -17,8 +19,10 @@ on:
       - '.gitignore'
       - 'posts/**'
       - 'fixtures/**'
+      - 'artifacts/**'
       - 'scripts/asset_manifest*.py'
       - 'scripts/validate_changed_asset_manifests.py'
+      - 'scripts/validate_public_workbook_artifacts.py'
       - 'tests/**'
       - 'requirements.txt'
       - '.github/workflows/validate-governed-assets.yml'
@@ -52,6 +56,11 @@ jobs:
           python scripts/asset_manifest.py audit
           --root .
           --expected-repository dosev-ai/dosevai-public-assets
+          --format text
+      - name: Validate public workbook artifacts
+        run: >-
+          python scripts/validate_public_workbook_artifacts.py
+          --root artifacts
           --format text
       - name: Validate changed asset packages
         run: >-

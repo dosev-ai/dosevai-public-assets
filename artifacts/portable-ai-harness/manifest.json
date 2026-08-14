@@ -1,0 +1,58 @@
+{
+  "artifact_id": "portable-ai-harness",
+  "artifact_type": "portable_ai_harness",
+  "schema_version": "1.0",
+  "status": "experimental",
+  "recommended_version": "0.2",
+  "recommended_version_state": "candidate_for_cross_provider_testing",
+  "runtime_model": "external_llm_or_ai_assistant",
+  "container_model": "versioned_xlsx_plus_bootstrap_contract",
+  "mutation_policy": "material_changes_require_user_approval",
+  "version_policy": "released_version_folders_are_immutable",
+  "versions": [
+    {
+      "version": "0.1",
+      "state": "baseline",
+      "files": {
+        "workbook": {
+          "path": "v0.1/portable-ai-harness-v0.1.xlsx",
+          "sha256": "6727b5cc575733082eed255f3b285bfc4e11ad73f77c4b6ff1b66de7bf4aee07"
+        },
+        "bootstrap": {
+          "path": "v0.1/portable-ai-harness-bootstrap-v0.1.md",
+          "sha256": "a93b995725591d8c7c42d44da2b0aeb824b0c178d9446698bd988ae924df5757"
+        },
+        "experiment_protocol": {
+          "path": "v0.1/portable-ai-harness-experiment-protocol-v0.1.md",
+          "sha256": "b6f2b71954919b29f1c61a99bd7f2b882476e3ee3fdeaf72e72ed2d493592934"
+        },
+        "structural_scan": {
+          "path": "v0.1/portable-ai-harness-v0.1-scan.json",
+          "sha256": "b1f9c43d8960784333e674fc94922856023099139e2e874ed463d29f049b64fa"
+        }
+      }
+    },
+    {
+      "version": "0.2",
+      "state": "candidate_for_cross_provider_testing",
+      "files": {
+        "workbook": {
+          "path": "v0.2/portable-ai-harness-v0.2.xlsx",
+          "sha256": "26247e6ed1d33a11e7f6433e891192081cb1b4267338d755446fd26dcff46dee"
+        },
+        "bootstrap": {
+          "path": "v0.2/portable-ai-harness-bootstrap-v0.2.md",
+          "sha256": "bc0c14718ce93339984e4c8bc1e07abb0f84922fcd9a5f3ec070cb08a9562227"
+        },
+        "experiment_protocol": {
+          "path": "v0.2/portable-ai-harness-experiment-protocol-v0.2.md",
+          "sha256": "68b79ef9ce70f4236f5628228918804fca094c7cefc3a1e2e7d66b3e80b5a6f9"
+        },
+        "structural_scan": {
+          "path": "v0.2/portable-ai-harness-v0.2-scan.json",
+          "sha256": "e5af7b30801c088d511f0687e95622feeab4ca197ca7dee188925f8f41c76f78"
+        }
+      }
+    }
+  ]
+}
