@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Validate public XLSX artifacts for active content and external workbook dependencies."""
+"""Validate public XLSX artifacts for active content and external dependencies."""
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -24,21 +23,45 @@ FORBIDDEN_TEXT_MARKERS = (
     "project-17",
     "fact-17",
 )
+REQUIRED_PARTS = (
+    "[content_types].xml",
+    "_rels/.rels",
+    "xl/workbook.xml",
+    "xl/_rels/workbook.xml.rels",
+)
+NETWORK_FORMULA_MARKERS = (
+    "WEBSERVICE(",
+    "HYPERLINK(",
+    "IMAGE(",
+    "RTD(",
+    "STOCKHISTORY(",
+)
 
 
 def _xlsx_files(root: Path) -> list[Path]:
     return sorted(path for path in root.rglob("*.xlsx") if path.is_file())
 
 
-def _has_external_relationship(xml_bytes: bytes) -> bool:
-    try:
-        root = ET.fromstring(xml_bytes)
-    except ET.ParseError:
-        return False
-    for rel in root.iter():
-        if rel.attrib.get("TargetMode", "").lower() == "external":
-            return True
-    return False
+def _local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def _has_external_relationship(root: ET.Element) -> bool:
+    return any(
+        rel.attrib.get("TargetMode", "").lower() == "external"
+        for rel in root.iter()
+    )
+
+
+def _network_formula(root: ET.Element) -> str | None:
+    for element in root.iter():
+        if _local_name(element.tag) != "f":
+            continue
+        formula = "".join(element.itertext()).upper()
+        for marker in NETWORK_FORMULA_MARKERS:
+            if marker in formula:
+                return marker.rstrip("(").lower()
+    return None
 
 
 def validate_xlsx(path: Path) -> dict[str, object]:
@@ -47,21 +70,58 @@ def validate_xlsx(path: Path) -> dict[str, object]:
         with zipfile.ZipFile(path) as archive:
             names = archive.namelist()
             lowered = [name.lower() for name in names]
+            lowered_set = set(lowered)
+
+            for required in REQUIRED_PARTS:
+                if required not in lowered_set:
+                    findings.append(f"missing_required_part:{required}")
+            if not any(
+                name.startswith("xl/worksheets/") and name.endswith(".xml")
+                for name in lowered
+            ):
+                findings.append("missing_required_part:xl/worksheets/*.xml")
+
             for name in lowered:
                 for marker in FORBIDDEN_PART_MARKERS:
                     if marker in f"/{name}":
                         findings.append(f"forbidden_part:{name}")
+
             for name in names:
-                if name.lower().endswith(".rels"):
-                    if _has_external_relationship(archive.read(name)):
+                lower_name = name.lower()
+                data = archive.read(name)
+                parsed_root: ET.Element | None = None
+
+                if lower_name.endswith((".xml", ".rels")):
+                    try:
+                        parsed_root = ET.fromstring(data)
+                    except ET.ParseError:
+                        findings.append(f"invalid_xml:{name}")
+
+                if lower_name.endswith(".rels") and parsed_root is not None:
+                    if _has_external_relationship(parsed_root):
                         findings.append(f"external_relationship:{name}")
-                if name.lower().endswith((".xml", ".rels", ".txt")):
-                    data = archive.read(name).decode("utf-8", errors="ignore").lower()
+
+                if (
+                    lower_name.startswith("xl/worksheets/")
+                    and lower_name.endswith(".xml")
+                    and parsed_root is not None
+                ):
+                    network_function = _network_formula(parsed_root)
+                    if network_function:
+                        findings.append(
+                            f"network_capable_formula:{network_function}:{name}"
+                        )
+
+                if lower_name.endswith((".xml", ".rels", ".txt")):
+                    text = data.decode("utf-8", errors="ignore").lower()
                     for marker in FORBIDDEN_TEXT_MARKERS:
-                        if marker in data:
-                            findings.append(f"private_identifier_marker:{marker}:{name}")
+                        if marker in text:
+                            findings.append(
+                                f"private_identifier_marker:{marker}:{name}"
+                            )
     except zipfile.BadZipFile:
         findings.append("invalid_xlsx_zip")
+
     return {
         "path": path.as_posix(),
         "ok": not findings,
