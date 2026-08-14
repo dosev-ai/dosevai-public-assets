@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate public XLSX artifacts for active content and external dependencies."""
+"""Validate public XLSX artifacts against the formula-free public profile."""
 from __future__ import annotations
 
 import argparse
@@ -17,31 +17,24 @@ FORBIDDEN_PART_MARKERS = (
     "/externallinks/",
     "/connections.xml",
     "/customui/",
+    "/macrosheets/",
+    "/webextensions/",
+    "/webextensions.xml",
+    "/taskpanes/",
+    "/taskpanes.xml",
 )
-FORBIDDEN_TEXT_MARKERS = (
-    "cortex://",
-    "action-17",
-    "project-17",
-    "fact-17",
+FORBIDDEN_TEXT_MARKERS = ("cortex://",)
+PRIVATE_ID_RE = re.compile(
+    r"\b(?:action|project|fact)-\d{10,}[A-Za-z0-9-]*\b",
+    re.IGNORECASE,
 )
+EXTERNAL_TARGET_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 REQUIRED_PARTS = (
     "[content_types].xml",
     "_rels/.rels",
     "xl/workbook.xml",
     "xl/_rels/workbook.xml.rels",
 )
-NETWORK_FORMULA_MARKERS = (
-    "WEBSERVICE(",
-    "HYPERLINK(",
-    "IMAGE(",
-    "RTD(",
-    "STOCKHISTORY(",
-)
-DDE_FORMULA_RE = re.compile(
-    r"^\s*[=+\-@]?\s*[A-Za-z0-9_.\\/:-]+\|.+!",
-    re.IGNORECASE,
-)
-FORMULA_ELEMENT_NAMES = {"f", "definedName"}
 UNSUPPORTED_WORKBOOK_EXTENSIONS = {
     ".xls",
     ".xlsb",
@@ -79,24 +72,54 @@ def _local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
 
-def _has_external_relationship(root: ET.Element) -> bool:
-    return any(
-        rel.attrib.get("TargetMode", "").lower() == "external"
-        for rel in root.iter()
+def _normalized_part_name(name: str) -> str:
+    return name.replace("\\", "/").lower()
+
+
+def _unsafe_part_name(name: str) -> bool:
+    normalized = name.replace("\\", "/")
+    parts = normalized.split("/")
+    return (
+        "\x00" in name
+        or "\\" in name
+        or normalized.startswith("/")
+        or any(part == ".." for part in parts)
     )
 
 
-def _network_formula(root: ET.Element) -> str | None:
-    for element in root.iter():
-        if _local_name(element.tag) not in FORMULA_ELEMENT_NAMES:
+def _external_relationship_reason(root: ET.Element) -> str | None:
+    for rel in root.iter():
+        if _local_name(rel.tag) != "Relationship":
             continue
-        formula = "".join(element.itertext()).strip()
-        upper_formula = formula.upper()
-        for marker in NETWORK_FORMULA_MARKERS:
-            if marker in upper_formula:
-                return marker.rstrip("(").lower()
-        if DDE_FORMULA_RE.match(formula):
-            return "dde"
+        target_mode = rel.attrib.get("TargetMode", "").strip().lower()
+        target = rel.attrib.get("Target", "").strip()
+        if target_mode == "external":
+            return "target_mode"
+        if target.startswith(("//", "\\\\")):
+            return "network_path"
+        if EXTERNAL_TARGET_RE.match(target):
+            return "absolute_uri"
+    return None
+
+
+def _formula_profile_violation(root: ET.Element) -> str | None:
+    for element in root.iter():
+        local = _local_name(element.tag)
+        text = "".join(element.itertext()).strip()
+        if local == "f" or "formula" in local.lower():
+            return local
+        if local == "definedName" and text:
+            return "definedName"
+    return None
+
+
+def _hidden_sheet_state(root: ET.Element) -> str | None:
+    for element in root.iter():
+        if _local_name(element.tag) != "sheet":
+            continue
+        state = element.attrib.get("state", "visible").strip().lower()
+        if state not in ("", "visible"):
+            return state
     return None
 
 
@@ -125,6 +148,21 @@ def validate_xlsx(path: Path) -> dict[str, object]:
             names = [info.filename for info in infos]
             lowered = [name.lower() for name in names]
             lowered_set = set(lowered)
+            normalized_names = [_normalized_part_name(name) for name in names]
+
+            if len(normalized_names) != len(set(normalized_names)):
+                seen: set[str] = set()
+                duplicates: set[str] = set()
+                for normalized in normalized_names:
+                    if normalized in seen:
+                        duplicates.add(normalized)
+                    seen.add(normalized)
+                for duplicate in sorted(duplicates):
+                    findings.append(f"duplicate_or_case_colliding_part:{duplicate}")
+
+            for name in names:
+                if _unsafe_part_name(name):
+                    findings.append(f"unsafe_package_part_name:{name}")
 
             if len(infos) > MAX_ARCHIVE_ENTRIES:
                 findings.append(f"too_many_archive_entries:{len(infos)}")
@@ -190,21 +228,21 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                             findings.append(f"invalid_xml:{name}")
 
                 if lower_name.endswith(".rels") and parsed_root is not None:
-                    if _has_external_relationship(parsed_root):
-                        findings.append(f"external_relationship:{name}")
+                    external_reason = _external_relationship_reason(parsed_root)
+                    if external_reason:
+                        findings.append(f"external_relationship:{external_reason}:{name}")
 
-                if (
-                    lower_name == "xl/workbook.xml"
-                    or (
-                        lower_name.startswith("xl/worksheets/")
-                        and lower_name.endswith(".xml")
-                    )
-                ) and parsed_root is not None:
-                    network_function = _network_formula(parsed_root)
-                    if network_function:
+                if parsed_root is not None:
+                    formula_violation = _formula_profile_violation(parsed_root)
+                    if formula_violation:
                         findings.append(
-                            f"network_capable_formula:{network_function}:{name}"
+                            f"formula_not_allowed:{formula_violation}:{name}"
                         )
+
+                if lower_name == "xl/workbook.xml" and parsed_root is not None:
+                    hidden_state = _hidden_sheet_state(parsed_root)
+                    if hidden_state:
+                        findings.append(f"hidden_sheet_not_allowed:{hidden_state}:{name}")
 
                 if lower_name.endswith((".xml", ".rels", ".txt")):
                     text = _normalized_text(data, parsed_root)
@@ -213,6 +251,11 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                             findings.append(
                                 f"private_identifier_marker:{marker}:{name}"
                             )
+                    private_id = PRIVATE_ID_RE.search(text)
+                    if private_id:
+                        findings.append(
+                            f"private_identifier_pattern:{private_id.group(0)}:{name}"
+                        )
     except zipfile.BadZipFile:
         findings.append("invalid_xlsx_zip")
 
