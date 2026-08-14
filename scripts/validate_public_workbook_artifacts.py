@@ -14,6 +14,8 @@ CONTENT_TYPES_NS = "http://schemas.openxmlformats.org/package/2006/content-types
 PACKAGE_RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 SPREADSHEET_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+OFFICE_DOCUMENT_REL_TYPE = f"{OFFICE_REL_NS}/officeDocument"
+WORKSHEET_REL_TYPE = f"{OFFICE_REL_NS}/worksheet"
 WORKBOOK_CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
 )
@@ -61,6 +63,10 @@ REQUIRED_PARTS = (
     "xl/_rels/workbook.xml.rels",
 )
 UNSUPPORTED_WORKBOOK_EXTENSIONS = {
+    ".fods",
+    ".ods",
+    ".ots",
+    ".sxc",
     ".xls",
     ".xla",
     ".xlb",
@@ -182,6 +188,16 @@ def _formula_profile_violation(root: ET.Element) -> str | None:
     return None
 
 
+def _style_profile_violation(root: ET.Element) -> str | None:
+    namespace, local = _split_tag(root.tag)
+    if (namespace, local) != (SPREADSHEET_NS, "styleSheet"):
+        return None
+    num_fmts = _direct_children(root, SPREADSHEET_NS, "numFmts")
+    if any(_direct_children(container, SPREADSHEET_NS, "numFmt") for container in num_fmts):
+        return "custom_number_format"
+    return None
+
+
 def _hidden_sheet_state(root: ET.Element) -> str | None:
     for element in _workbook_sheet_elements(root):
         state = element.attrib.get("state", "visible").strip().lower()
@@ -256,6 +272,8 @@ def _expected_root_finding(part_name: str, root: ET.Element) -> str | None:
         expected = (PACKAGE_RELS_NS, "Relationships")
     elif part_name == "xl/workbook.xml":
         expected = (SPREADSHEET_NS, "workbook")
+    elif part_name == "xl/styles.xml":
+        expected = (SPREADSHEET_NS, "styleSheet")
     elif part_name.startswith("xl/worksheets/") and part_name.endswith(".xml"):
         expected = (SPREADSHEET_NS, "worksheet")
     else:
@@ -308,7 +326,7 @@ def _validate_relationship_graph(
         office_targets = [
             target
             for _, type_uri, target, _ in _relationship_records(root_rels)
-            if _relationship_type_tail(type_uri) == "officedocument"
+            if type_uri == OFFICE_DOCUMENT_REL_TYPE
         ]
         if not any(
             _resolve_internal_target("", target) == "xl/workbook.xml"
@@ -320,7 +338,7 @@ def _validate_relationship_graph(
     worksheet_by_id: dict[str, str] = {}
     if workbook_rels is not None:
         for rel_id, type_uri, target, target_mode in _relationship_records(workbook_rels):
-            if _relationship_type_tail(type_uri) != "worksheet":
+            if type_uri != WORKSHEET_REL_TYPE:
                 continue
             if target_mode.lower() == "external":
                 continue
@@ -495,6 +513,11 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                     if formula_violation:
                         findings.append(
                             f"formula_not_allowed:{formula_violation}:{name}"
+                        )
+                    style_violation = _style_profile_violation(parsed_root)
+                    if style_violation:
+                        findings.append(
+                            f"display_suppressing_style_not_allowed:{style_violation}:{name}"
                         )
 
                 if lower_name == "xl/workbook.xml" and parsed_root is not None:
