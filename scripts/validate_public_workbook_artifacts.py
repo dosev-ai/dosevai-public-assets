@@ -200,6 +200,11 @@ def _normalized_text(data: bytes, parsed_root: ET.Element | None) -> str:
             for element in parsed_root.iter()
             if _local_name(element.tag) in TEXT_CONTAINER_NAMES
         ]
+        chunks.extend(
+            value
+            for element in parsed_root.iter()
+            for value in element.attrib.values()
+        )
         chunks.append("".join(parsed_root.itertext()))
         return "\n".join(chunks).lower().replace("\x00", "")
     return data.decode("latin-1", errors="ignore").lower().replace("\x00", "")
