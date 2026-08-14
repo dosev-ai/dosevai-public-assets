@@ -4,6 +4,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.validate_public_workbook_artifacts import validate_xlsx
 
@@ -96,6 +97,20 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
         self.assertTrue(any("private_identifier_marker" in item for item in result["findings"]))
+
+    def test_oversized_zip_member_is_rejected_before_read(self) -> None:
+        members = self._safe_members()
+        members["xl/sharedStrings.xml"] = b"x" * 513
+        path = self._write_zip(members)
+        with patch(
+            "scripts.validate_public_workbook_artifacts.MAX_MEMBER_UNCOMPRESSED_BYTES",
+            512,
+        ):
+            result = validate_xlsx(path)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("member_uncompressed_size_limit" in item for item in result["findings"])
+        )
 
 
 if __name__ == "__main__":
