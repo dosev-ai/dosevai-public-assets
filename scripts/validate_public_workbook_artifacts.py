@@ -255,6 +255,9 @@ def _style_profile_violation(root: ET.Element) -> str | None:
     if any(_direct_children(container, SPREADSHEET_NS, "numFmt") for container in num_fmts):
         return "custom_number_format"
 
+    if any(_local_name(element.tag) == "dxf" for element in root.iter()):
+        return "differential_style"
+
     fonts_containers = _direct_children(root, SPREADSHEET_NS, "fonts")
     fills_containers = _direct_children(root, SPREADSHEET_NS, "fills")
     cell_xfs_containers = _direct_children(root, SPREADSHEET_NS, "cellXfs")
@@ -304,6 +307,8 @@ def _zero_or_negative_dimension(value: str) -> bool:
 def _hidden_worksheet_content(root: ET.Element) -> str | None:
     for element in root.iter():
         local = _local_name(element.tag)
+        if local == "conditionalFormatting":
+            return "conditional_formatting"
         if local in {"row", "col"}:
             hidden = element.attrib.get("hidden", "").strip().lower()
             if hidden in {"1", "true"}:
