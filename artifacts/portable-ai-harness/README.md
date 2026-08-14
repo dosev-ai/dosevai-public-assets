@@ -77,7 +77,7 @@ Adds:
 - synthetic smoke and expanded-test concepts;
 - clearer separation between execution history, design changes, and released versions.
 
-v0.2 is an experimental candidate. Cross-provider free-tier testing is still part of the release evidence, so do not describe it as universally compatible or production-ready.
+v0.2 is an experimental MVP candidate. Cross-provider free-tier testing is intentionally post-MVP validation and does not block this repository release. Do not describe the harness as universally compatible or production-ready until that evidence exists.
 
 ## Folder layout
 
