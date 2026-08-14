@@ -107,16 +107,18 @@ portable-ai-harness/
 
 ## Safety and privacy
 
-The v0.1 and v0.2 starter workbooks use the repository's deliberately narrow public XLSX profile:
+The v0.1 and v0.2 starter workbooks use a deliberately narrow public XLSX profile:
 
 - standard `.xlsx` only;
-- no workbook formulas or defined-name expressions;
-- no hidden or very-hidden sheets;
-- no macros, ActiveX, OLE, embedded payloads, add-ins, macro sheets, or web-extension/task-pane parts;
-- no external workbook relationships or absolute/network relationship targets;
-- no credentials or private governance identifiers.
+- formula-free: no cell formulas or defined-name expressions;
+- visible-content only: no hidden or very-hidden sheets, hidden rows, hidden columns, or default hidden rows;
+- XML-only OOXML package members for this profile: no arbitrary binary/media package parts or custom XML payloads;
+- no macros, ActiveX, OLE, embedded payloads, add-ins, macro sheets, connections, query tables, or web-extension/task-pane parts;
+- no external workbook relationships, absolute/network relationship targets, or active relationship types;
+- canonical workbook/worksheet OOXML roots, content types, sheet relationship IDs, and worksheet targets are validated;
+- no credentials or private governance identifiers in bounded package content or ZIP metadata.
 
-This is intentional. The workbook is the **declarative container**; the AI assistant is the **reasoning/runtime layer**. If a future working artifact genuinely needs formulas or other active Excel features, it should receive a separate typed validation profile instead of broadening this starter profile by default.
+This is intentional. The workbook is the **declarative container**; the AI assistant is the **reasoning/runtime layer**. This safety profile is specific to the current starter harness. If a future working artifact genuinely needs formulas, images, hidden content, macros, add-ins, or other active Excel features, it should receive a separate typed validation profile instead of broadening this baseline by default.
 
 That does not make AI usage risk-free. Anything you upload is handled under the terms, privacy controls, retention rules, and organizational policy of the AI service you choose. Do not place confidential or restricted work data into an unapproved service.
 
