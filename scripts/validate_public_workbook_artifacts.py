@@ -42,6 +42,17 @@ DDE_FORMULA_RE = re.compile(
     re.IGNORECASE,
 )
 FORMULA_ELEMENT_NAMES = {"f", "definedName"}
+UNSUPPORTED_WORKBOOK_EXTENSIONS = {
+    ".xls",
+    ".xlsb",
+    ".xlsm",
+    ".xlam",
+    ".xlt",
+    ".xltm",
+    ".xltx",
+}
+XML_DECLARATION_MARKERS = (b"<!doctype", b"<!entity")
+TEXT_CONTAINER_NAMES = {"si", "is", "text", "definedName", "f", "t"}
 MAX_ARCHIVE_ENTRIES = 2048
 MAX_MEMBER_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
 MAX_TOTAL_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
@@ -53,6 +64,14 @@ def _xlsx_files(root: Path) -> list[Path]:
         path
         for path in root.rglob("*")
         if path.is_file() and path.suffix.lower() == ".xlsx"
+    )
+
+
+def _unsupported_workbook_files(root: Path) -> list[Path]:
+    return sorted(
+        path
+        for path in root.rglob("*")
+        if path.is_file() and path.suffix.lower() in UNSUPPORTED_WORKBOOK_EXTENSIONS
     )
 
 
@@ -83,8 +102,19 @@ def _network_formula(root: ET.Element) -> str | None:
 
 def _normalized_text(data: bytes, parsed_root: ET.Element | None) -> str:
     if parsed_root is not None:
-        return ET.tostring(parsed_root, encoding="unicode").lower().replace("\x00", "")
+        chunks = [
+            "".join(element.itertext())
+            for element in parsed_root.iter()
+            if _local_name(element.tag) in TEXT_CONTAINER_NAMES
+        ]
+        chunks.append("".join(parsed_root.itertext()))
+        return "\n".join(chunks).lower().replace("\x00", "")
     return data.decode("utf-8", errors="ignore").lower().replace("\x00", "")
+
+
+def _has_forbidden_xml_declaration(data: bytes) -> bool:
+    probe = data.lower().replace(b"\x00", b"")
+    return any(marker in probe for marker in XML_DECLARATION_MARKERS)
 
 
 def validate_xlsx(path: Path) -> dict[str, object]:
@@ -151,10 +181,13 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                 parsed_root: ET.Element | None = None
 
                 if lower_name.endswith((".xml", ".rels")):
-                    try:
-                        parsed_root = ET.fromstring(data)
-                    except ET.ParseError:
-                        findings.append(f"invalid_xml:{name}")
+                    if _has_forbidden_xml_declaration(data):
+                        findings.append(f"forbidden_xml_declaration:{name}")
+                    else:
+                        try:
+                            parsed_root = ET.fromstring(data)
+                        except ET.ParseError:
+                            findings.append(f"invalid_xml:{name}")
 
                 if lower_name.endswith(".rels") and parsed_root is not None:
                     if _has_external_relationship(parsed_root):
@@ -197,13 +230,30 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     files = _xlsx_files(args.root)
+    unsupported = _unsupported_workbook_files(args.root)
     results = [validate_xlsx(path) for path in files]
-    ok = bool(files) and all(bool(item["ok"]) for item in results)
-    payload = {"ok": ok, "xlsx_count": len(files), "results": results}
+    results.extend(
+        {
+            "path": path.as_posix(),
+            "ok": False,
+            "findings": [f"unsupported_workbook_extension:{path.suffix.lower()}"],
+        }
+        for path in unsupported
+    )
+    ok = bool(files) and not unsupported and all(bool(item["ok"]) for item in results)
+    payload = {
+        "ok": ok,
+        "xlsx_count": len(files),
+        "unsupported_workbook_count": len(unsupported),
+        "results": results,
+    }
     if args.format == "json":
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
-        print(f"public workbook validation: {'PASS' if ok else 'FAIL'} ({len(files)} xlsx)")
+        print(
+            "public workbook validation: "
+            f"{'PASS' if ok else 'FAIL'} ({len(files)} xlsx, {len(unsupported)} unsupported)"
+        )
         for item in results:
             status = "PASS" if item["ok"] else "FAIL"
             print(f"- {status} {item['path']}")
