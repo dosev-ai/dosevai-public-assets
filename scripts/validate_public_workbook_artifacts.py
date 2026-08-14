@@ -36,6 +36,7 @@ NETWORK_FORMULA_MARKERS = (
     "RTD(",
     "STOCKHISTORY(",
 )
+FORMULA_ELEMENT_NAMES = {"f", "definedName"}
 MAX_ARCHIVE_ENTRIES = 2048
 MAX_MEMBER_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
 MAX_TOTAL_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
@@ -43,7 +44,11 @@ MAX_COMPRESSION_RATIO = 200
 
 
 def _xlsx_files(root: Path) -> list[Path]:
-    return sorted(path for path in root.rglob("*.xlsx") if path.is_file())
+    return sorted(
+        path
+        for path in root.rglob("*")
+        if path.is_file() and path.suffix.lower() == ".xlsx"
+    )
 
 
 def _local_name(tag: str) -> str:
@@ -59,13 +64,19 @@ def _has_external_relationship(root: ET.Element) -> bool:
 
 def _network_formula(root: ET.Element) -> str | None:
     for element in root.iter():
-        if _local_name(element.tag) != "f":
+        if _local_name(element.tag) not in FORMULA_ELEMENT_NAMES:
             continue
         formula = "".join(element.itertext()).upper()
         for marker in NETWORK_FORMULA_MARKERS:
             if marker in formula:
                 return marker.rstrip("(").lower()
     return None
+
+
+def _normalized_text(data: bytes, parsed_root: ET.Element | None) -> str:
+    if parsed_root is not None:
+        return ET.tostring(parsed_root, encoding="unicode").lower().replace("\x00", "")
+    return data.decode("utf-8", errors="ignore").lower().replace("\x00", "")
 
 
 def validate_xlsx(path: Path) -> dict[str, object]:
@@ -142,10 +153,12 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                         findings.append(f"external_relationship:{name}")
 
                 if (
-                    lower_name.startswith("xl/worksheets/")
-                    and lower_name.endswith(".xml")
-                    and parsed_root is not None
-                ):
+                    lower_name == "xl/workbook.xml"
+                    or (
+                        lower_name.startswith("xl/worksheets/")
+                        and lower_name.endswith(".xml")
+                    )
+                ) and parsed_root is not None:
                     network_function = _network_formula(parsed_root)
                     if network_function:
                         findings.append(
@@ -153,7 +166,7 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                         )
 
                 if lower_name.endswith((".xml", ".rels", ".txt")):
-                    text = data.decode("utf-8", errors="ignore").lower()
+                    text = _normalized_text(data, parsed_root)
                     for marker in FORBIDDEN_TEXT_MARKERS:
                         if marker in text:
                             findings.append(
