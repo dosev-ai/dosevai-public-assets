@@ -36,6 +36,10 @@ NETWORK_FORMULA_MARKERS = (
     "RTD(",
     "STOCKHISTORY(",
 )
+MAX_ARCHIVE_ENTRIES = 2048
+MAX_MEMBER_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
+MAX_TOTAL_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
+MAX_COMPRESSION_RATIO = 200
 
 
 def _xlsx_files(root: Path) -> list[Path]:
@@ -68,9 +72,32 @@ def validate_xlsx(path: Path) -> dict[str, object]:
     findings: list[str] = []
     try:
         with zipfile.ZipFile(path) as archive:
-            names = archive.namelist()
+            infos = archive.infolist()
+            names = [info.filename for info in infos]
             lowered = [name.lower() for name in names]
             lowered_set = set(lowered)
+
+            if len(infos) > MAX_ARCHIVE_ENTRIES:
+                findings.append(f"too_many_archive_entries:{len(infos)}")
+
+            total_uncompressed = sum(info.file_size for info in infos)
+            if total_uncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES:
+                findings.append(f"archive_uncompressed_size_limit:{total_uncompressed}")
+
+            unsafe_members: set[str] = set()
+            for info in infos:
+                if info.file_size > MAX_MEMBER_UNCOMPRESSED_BYTES:
+                    findings.append(
+                        f"member_uncompressed_size_limit:{info.filename}:{info.file_size}"
+                    )
+                    unsafe_members.add(info.filename)
+                if info.file_size and info.compress_size:
+                    ratio = info.file_size / info.compress_size
+                    if ratio > MAX_COMPRESSION_RATIO:
+                        findings.append(
+                            f"member_compression_ratio_limit:{info.filename}:{ratio:.1f}"
+                        )
+                        unsafe_members.add(info.filename)
 
             for required in REQUIRED_PARTS:
                 if required not in lowered_set:
@@ -86,7 +113,20 @@ def validate_xlsx(path: Path) -> dict[str, object]:
                     if marker in f"/{name}":
                         findings.append(f"forbidden_part:{name}")
 
+            if (
+                len(infos) > MAX_ARCHIVE_ENTRIES
+                or total_uncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES
+            ):
+                return {
+                    "path": path.as_posix(),
+                    "ok": False,
+                    "findings": sorted(set(findings)),
+                }
+
             for name in names:
+                if name in unsafe_members:
+                    continue
+
                 lower_name = name.lower()
                 data = archive.read(name)
                 parsed_root: ET.Element | None = None
