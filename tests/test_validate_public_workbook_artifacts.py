@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.validate_public_workbook_artifacts import validate_xlsx
+from scripts.validate_public_workbook_artifacts import _xlsx_files, validate_xlsx
 
 
 class PublicWorkbookValidationTests(unittest.TestCase):
@@ -42,6 +42,13 @@ class PublicWorkbookValidationTests(unittest.TestCase):
     def test_safe_xlsx_passes(self) -> None:
         path = self._write_zip(self._safe_members())
         self.assertTrue(validate_xlsx(path)["ok"])
+
+    def test_xlsx_discovery_is_case_insensitive(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            upper = root / "unsafe.XLSX"
+            upper.write_bytes(b"placeholder")
+            self.assertEqual(_xlsx_files(root), [upper])
 
     def test_missing_core_part_is_rejected(self) -> None:
         members = self._safe_members()
@@ -87,6 +94,19 @@ class PublicWorkbookValidationTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("network_capable_formula:webservice" in item for item in result["findings"]))
 
+    def test_network_capable_defined_name_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/workbook.xml"] = (
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<definedNames><definedName name="Fetch">'
+            'WEBSERVICE("https://example.com")'
+            '</definedName></definedNames>'
+            '</workbook>'
+        )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("network_capable_formula:webservice" in item for item in result["findings"]))
+
     def test_private_identifier_marker_is_rejected(self) -> None:
         members = self._safe_members()
         members["xl/sharedStrings.xml"] = (
@@ -94,6 +114,18 @@ class PublicWorkbookValidationTests(unittest.TestCase):
             '<si><t>cortex://private-doc</t></si>'
             '</sst>'
         )
+        result = validate_xlsx(self._write_zip(members))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("private_identifier_marker" in item for item in result["findings"]))
+
+    def test_utf16_private_identifier_marker_is_rejected(self) -> None:
+        members = self._safe_members()
+        members["xl/sharedStrings.xml"] = (
+            '<?xml version="1.0" encoding="utf-16"?>'
+            '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            '<si><t>cortex://private-doc</t></si>'
+            '</sst>'
+        ).encode("utf-16")
         result = validate_xlsx(self._write_zip(members))
         self.assertFalse(result["ok"])
         self.assertTrue(any("private_identifier_marker" in item for item in result["findings"]))
