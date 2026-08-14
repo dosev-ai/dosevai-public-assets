@@ -107,7 +107,16 @@ portable-ai-harness/
 
 ## Safety and privacy
 
-The published starter workbooks are intended to be macro-free and free of external workbook connections, embedded executable content, credentials, and private governance identifiers.
+The v0.1 and v0.2 starter workbooks use the repository's deliberately narrow public XLSX profile:
+
+- standard `.xlsx` only;
+- no workbook formulas or defined-name expressions;
+- no hidden or very-hidden sheets;
+- no macros, ActiveX, OLE, embedded payloads, add-ins, macro sheets, or web-extension/task-pane parts;
+- no external workbook relationships or absolute/network relationship targets;
+- no credentials or private governance identifiers.
+
+This is intentional. The workbook is the **declarative container**; the AI assistant is the **reasoning/runtime layer**. If a future working artifact genuinely needs formulas or other active Excel features, it should receive a separate typed validation profile instead of broadening this starter profile by default.
 
 That does not make AI usage risk-free. Anything you upload is handled under the terms, privacy controls, retention rules, and organizational policy of the AI service you choose. Do not place confidential or restricted work data into an unapproved service.
 
