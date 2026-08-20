@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+<title id="title">LinkedIn card: AI regulation without an incumbent moat</title>
+<desc id="desc">A vertical social card showing capability and rulebook paths converging on a central frontier-capability gate, with the question of how to regulate risk without making the gate affordable only to incumbents.</desc>
+<defs>
+  <style>.display{font-family:Arial,Helvetica,sans-serif;font-weight:800}.body{font-family:Arial,Helvetica,sans-serif}</style>
+  <marker id="ab" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6L0 12Z" fill="#49749A"/></marker>
+  <marker id="ac" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6L0 12Z" fill="#C46F3B"/></marker>
+</defs>
+<rect width="1080" height="1350" fill="#F7F2E8"/>
+<rect width="1080" height="20" fill="#071629"/>
+<text x="72" y="110" class="display" font-size="58" fill="#071629">AI IS BECOMING A</text>
+<text x="72" y="177" class="display" font-size="58" fill="#071629">REGULATED INDUSTRY.</text>
+<text x="72" y="258" class="display" font-size="54" fill="#C46F3B">DON'T LET REGULATION</text>
+<text x="72" y="322" class="display" font-size="54" fill="#C46F3B">BECOME THE MOAT.</text>
+<text x="72" y="382" class="body" font-size="27" fill="#575751">The race now has two tracks.</text>
+
+<g transform="translate(118 475)">
+  <circle cx="105" cy="105" r="82" fill="#FFFFFF" stroke="#49749A" stroke-width="6"/>
+  <path d="M65 138l40-72 40 72M85 102h40" fill="none" stroke="#49749A" stroke-width="8" stroke-linecap="round"/>
+  <text x="105" y="232" class="display" font-size="30" fill="#10233B" text-anchor="middle">CAPABILITY</text>
+</g>
+<g transform="translate(752 475)">
+  <circle cx="105" cy="105" r="82" fill="#FFFFFF" stroke="#C46F3B" stroke-width="6"/>
+  <path d="M62 78h86v70H62zM80 62v16M130 62v16M78 103h54M78 124h40" fill="none" stroke="#C46F3B" stroke-width="7" stroke-linecap="round"/>
+  <text x="105" y="232" class="display" font-size="30" fill="#10233B" text-anchor="middle">RULEBOOK</text>
+</g>
+<path d="M290 625C395 620 420 678 465 716" fill="none" stroke="#49749A" stroke-width="8" marker-end="url(#ab)"/>
+<path d="M790 625C685 620 660 678 615 716" fill="none" stroke="#C46F3B" stroke-width="8" marker-end="url(#ac)"/>
+
+<g transform="translate(390 660)">
+  <rect width="300" height="330" rx="34" fill="#071629" stroke="#C46F3B" stroke-width="6"/>
+  <path d="M55 145V92L150 38L245 92V145" fill="#0B2139" stroke="#C46F3B" stroke-width="5"/>
+  <rect x="102" y="165" width="96" height="135" rx="48" fill="#F7F2E8" stroke="#C46F3B" stroke-width="4"/>
+  <text x="150" y="117" class="display" font-size="25" fill="#FFFFFF" text-anchor="middle">FRONTIER</text>
+  <text x="150" y="146" class="display" font-size="25" fill="#FFFFFF" text-anchor="middle">CAPABILITY</text>
+</g>
+
+<text x="540" y="1065" class="display" font-size="35" fill="#071629" text-anchor="middle">WHO CONTROLS THE GATE?</text>
+<g transform="translate(110 1128)">
+  <rect width="860" height="90" rx="45" fill="#FFFFFF" stroke="#DDD4C7" stroke-width="3"/>
+  <text x="430" y="38" class="body" font-size="24" fill="#575751" text-anchor="middle">Safety must constrain risk.</text>
+  <text x="430" y="68" class="display" font-size="25" fill="#10233B" text-anchor="middle">Competition and replaceability must survive the rulebook.</text>
+</g>
+<text x="540" y="1287" class="display" font-size="31" fill="#C46F3B" text-anchor="middle">WHERE WOULD YOU DRAW THE LINE?</text>
+</svg>
