@@ -8,7 +8,7 @@ project: personal-web-presence
 source_repository: dosev-ai/dosevai-public-assets
 source_path: posts/ai-regulated-industry-without-building-a-moat/cover.svg
 mime_type: image/svg+xml
-sha256: 25117d6fa889a18175d1080b6aa15e1039ebbe0bfd3e4d4a72edde8bac626f15
+sha256: 13dc6a9d2005baf368fef412038912014469d3e7adb7799b03d7b796ad7a1aff
 role: explanatory_cover
 sequence: 0
 step_key: cover
