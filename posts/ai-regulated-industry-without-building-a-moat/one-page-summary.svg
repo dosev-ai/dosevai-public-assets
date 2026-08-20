@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600" role="img" aria-labelledby="title desc">
+<title id="title">One-page summary: AI regulation without an incumbent moat</title>
+<desc id="desc">A one-page executive summary of the article: two races for capability and the rulebook, frontier AI becoming strategic infrastructure, regulation focused on the gate rather than every user, and a three-part moat test covering safety, competition and replaceability.</desc>
+<defs>
+  <style>
+    .display{font-family:Arial,Helvetica,sans-serif;font-weight:800}.body{font-family:Arial,Helvetica,sans-serif}
+    .h2{font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:34px;fill:#071629}
+    .p{font-family:Arial,Helvetica,sans-serif;font-size:23px;fill:#10233B}
+    .muted{font-family:Arial,Helvetica,sans-serif;font-size:20px;fill:#575751}
+  </style>
+  <marker id="ob" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#49749A"/></marker>
+  <marker id="oc" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#C46F3B"/></marker>
+</defs>
+<rect width="1200" height="1600" fill="#F7F2E8"/>
+<rect width="1200" height="18" fill="#071629"/>
+<text x="70" y="94" class="display" font-size="54" fill="#071629">AI IS BECOMING A REGULATED INDUSTRY.</text>
+<text x="70" y="157" class="display" font-size="49" fill="#C46F3B">DON'T LET REGULATION BECOME THE MOAT.</text>
+<text x="70" y="210" class="body" font-size="24" fill="#575751">A one-page executive summary</text>
+
+<g transform="translate(70 255)">
+  <rect width="1060" height="160" rx="24" fill="#FFFFFF" stroke="#DDD4C7" stroke-width="3"/>
+  <text x="30" y="45" class="display" font-size="25" fill="#C46F3B">TL;DR</text>
+  <text x="30" y="82" class="p">Frontier AI increasingly needs external rules. But safety, compute and compliance</text>
+  <text x="30" y="113" class="p">should not become an entry ticket only today's largest labs can afford.</text>
+  <text x="30" y="144" class="p">The design problem is to make the gate governable without making it owned.</text>
+</g>
+
+<text x="70" y="487" class="h2">1. THE RACE IS NOW HAPPENING ON TWO TRACKS</text>
+<g transform="translate(70 525)">
+  <rect width="470" height="185" rx="24" fill="#FFFFFF" stroke="#49749A" stroke-width="4"/>
+  <text x="235" y="55" class="display" font-size="30" fill="#49749A" text-anchor="middle">CAPABILITY RACE</text>
+  <text x="235" y="96" class="p" text-anchor="middle">Models - compute - security</text><text x="235" y="128" class="p" text-anchor="middle">deployment - customers</text>
+  <rect x="590" width="470" height="185" rx="24" fill="#FFFFFF" stroke="#C46F3B" stroke-width="4"/>
+  <text x="825" y="55" class="display" font-size="30" fill="#C46F3B" text-anchor="middle">RULEBOOK RACE</text>
+  <text x="825" y="96" class="p" text-anchor="middle">Thresholds - evaluations</text><text x="825" y="128" class="p" text-anchor="middle">security - reporting - access</text>
+  <path d="M470 95H575" fill="none" stroke="#49749A" stroke-width="7" marker-end="url(#ob)"/>
+  <path d="M590 95H505" fill="none" stroke="#C46F3B" stroke-width="7" marker-end="url(#oc)"/>
+</g>
+
+<text x="70" y="788" class="h2">2. FRONTIER AI IS BECOMING STRATEGIC INFRASTRUCTURE</text>
+<g transform="translate(70 825)">
+  <rect width="1060" height="185" rx="24" fill="#071629"/>
+  <circle cx="105" cy="93" r="52" fill="#F7F2E8" stroke="#C46F3B" stroke-width="5"/>
+  <path d="M72 104h66M82 85h46M92 68h26M77 104v26M133 104v26" fill="none" stroke="#071629" stroke-width="5" stroke-linecap="round"/>
+  <text x="190" y="63" class="display" font-size="30" fill="#FFFFFF">THE STATE CARES ABOUT MORE THAN SAFETY</text>
+  <text x="190" y="101" class="body" font-size="23" fill="#FFFFFF">Reliable access - lawful use - supplier resilience - sovereign control.</text>
+  <text x="190" y="139" class="body" font-size="21" fill="#FFFFFF">Dependence on one private provider can become a resilience and control concern.</text>
+</g>
+
+<text x="70" y="1090" class="h2">3. REGULATE THE GATE, NOT EVERY USER</text>
+<g transform="translate(70 1128)">
+  <rect width="1060" height="150" rx="24" fill="#FFFFFF" stroke="#DDD4C7" stroke-width="3"/>
+  <text x="28" y="47" class="p">Register frontier models/providers above measurable thresholds. Preserve exact version identity.</text>
+  <text x="28" y="82" class="p">Require independent evaluation, security, monitoring and incident reporting.</text>
+  <text x="28" y="117" class="body" font-size="21" fill="#10233B">Add stronger obligations where capability receives material authority - not personal licenses for ordinary users.</text>
+</g>
+
+<text x="70" y="1357" class="h2">4. EVERY RULE NEEDS A MOAT TEST</text>
+<g transform="translate(70 1390)">
+  <rect width="1060" height="125" rx="24" fill="#FFFFFF" stroke="#DDD4C7" stroke-width="3"/>
+  <text x="176" y="48" class="display" font-size="25" fill="#2F7D5B" text-anchor="middle">SAFETY</text>
+  <text x="530" y="48" class="display" font-size="25" fill="#A86A2A" text-anchor="middle">COMPETITION</text>
+  <text x="884" y="48" class="display" font-size="25" fill="#49749A" text-anchor="middle">REPLACEABILITY</text>
+  <text x="176" y="82" class="muted" text-anchor="middle">Constrain measurable risk</text>
+  <text x="530" y="82" class="muted" text-anchor="middle">Keep the bar accessible</text>
+  <text x="884" y="82" class="muted" text-anchor="middle">Avoid operational captivity</text>
+</g>
+<text x="600" y="1544" class="display" font-size="22" fill="#C46F3B" text-anchor="middle">LET THE LABS HELP EXPLAIN THE FRONTIER.</text>
+<text x="600" y="1574" class="display" font-size="22" fill="#C46F3B" text-anchor="middle">DON'T LET THE FRONTIER BECOME THE REGULATOR.</text>
+</svg>
