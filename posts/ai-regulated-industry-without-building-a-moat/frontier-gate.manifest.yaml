@@ -8,7 +8,7 @@ project: personal-web-presence
 source_repository: dosev-ai/dosevai-public-assets
 source_path: posts/ai-regulated-industry-without-building-a-moat/frontier-gate.svg
 mime_type: image/svg+xml
-sha256: f8fb47d87a087dbe88db5c95a32b87298fe224a125df816c14570d354d006c95
+sha256: e9f4f68c50fbb8a3fe99cae1c3da658418998862583f57378d053d9f31026a6e
 role: explanatory_inline
 section_anchor: every-rule-needs-a-moat-test
 sequence: 1
