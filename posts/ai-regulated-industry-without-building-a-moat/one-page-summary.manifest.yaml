@@ -8,7 +8,7 @@ project: personal-web-presence
 source_repository: dosev-ai/dosevai-public-assets
 source_path: posts/ai-regulated-industry-without-building-a-moat/one-page-summary.svg
 mime_type: image/svg+xml
-sha256: 8d1b7ebe9ae9d8c98628dc32da561889da3144b2e52720c7806188f3cdfcd1b8
+sha256: 126a5acfe7f3494d1080b450a885b7b6b0ee215465c83092ffe970738c2bd25f
 role: one_page_summary
 sequence: 3
 step_key: one-page-summary
