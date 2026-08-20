@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Two races, one frontier-capability gate</title>
+<desc id="desc">A flow diagram showing the capability race and the rulebook race converging on a frontier-capability gate. The resulting rules are tested for safety, competition and replaceability before regulated access.</desc>
+<defs>
+  <style>
+    .display{font-family:Arial,Helvetica,sans-serif;font-weight:800}
+    .body{font-family:Arial,Helvetica,sans-serif}
+    .small{font-family:Arial,Helvetica,sans-serif;font-size:18px;fill:#575751;text-anchor:middle}
+  </style>
+  <marker id="a1" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6L0 12Z" fill="#49749A"/></marker>
+  <marker id="a2" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6L0 12Z" fill="#C46F3B"/></marker>
+  <marker id="a3" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6L0 12Z" fill="#071629"/></marker>
+</defs>
+<rect width="1600" height="900" fill="#F7F2E8"/>
+<text x="800" y="92" text-anchor="middle" class="display" font-size="62" fill="#071629">TWO RACES. ONE GATE.</text>
+<text x="800" y="142" text-anchor="middle" class="body" font-size="27" fill="#575751">The safety question is necessary. It is not sufficient.</text>
+
+<g transform="translate(90 250)">
+  <rect width="410" height="205" rx="28" fill="#FFFFFF" stroke="#49749A" stroke-width="4"/>
+  <circle cx="90" cy="84" r="43" fill="#DCE8F0" stroke="#49749A" stroke-width="4"/>
+  <path d="M66 104l24-45 24 45M78 82h24" fill="none" stroke="#49749A" stroke-width="6" stroke-linecap="round"/>
+  <text x="285" y="70" class="display" font-size="25" fill="#10233B" text-anchor="middle">CAPABILITY RACE</text>
+  <text x="285" y="112" class="small">Models - compute - security</text>
+  <text x="285" y="143" class="small">deployment - commercial scale</text>
+</g>
+<g transform="translate(90 515)">
+  <rect width="410" height="205" rx="28" fill="#FFFFFF" stroke="#C46F3B" stroke-width="4"/>
+  <circle cx="90" cy="84" r="43" fill="#F3E5D9" stroke="#C46F3B" stroke-width="4"/>
+  <path d="M62 61h56v47H62zM74 51v10M106 51v10M72 78h36M72 93h28" fill="none" stroke="#C46F3B" stroke-width="5" stroke-linecap="round"/>
+  <text x="285" y="70" class="display" font-size="25" fill="#10233B" text-anchor="middle">RULEBOOK RACE</text>
+  <text x="285" y="112" class="small">Thresholds - evaluations</text>
+  <text x="285" y="143" class="small">security - reporting - access</text>
+</g>
+
+<path d="M520 352C650 352 690 394 750 423" fill="none" stroke="#49749A" stroke-width="7" marker-end="url(#a1)"/>
+<path d="M520 617C650 617 690 575 750 546" fill="none" stroke="#C46F3B" stroke-width="7" marker-end="url(#a2)"/>
+
+<g transform="translate(755 312)">
+  <rect width="330" height="350" rx="34" fill="#071629" stroke="#C46F3B" stroke-width="5"/>
+  <path d="M60 155V94L165 35L270 94V155" fill="#0B2139" stroke="#C46F3B" stroke-width="4"/>
+  <rect x="108" y="168" width="114" height="148" rx="54" fill="#F7F2E8" stroke="#C46F3B" stroke-width="4"/>
+  <text x="165" y="118" class="display" font-size="26" fill="#FFFFFF" text-anchor="middle">FRONTIER</text>
+  <text x="165" y="148" class="display" font-size="26" fill="#FFFFFF" text-anchor="middle">CAPABILITY</text>
+  <text x="165" y="332" class="body" font-size="22" fill="#FFFFFF" text-anchor="middle">Who controls the gate?</text>
+</g>
+<path d="M1095 487H1180" fill="none" stroke="#071629" stroke-width="7" marker-end="url(#a3)"/>
+
+<g transform="translate(1200 245)">
+  <rect width="330" height="510" rx="28" fill="#FFFFFF" stroke="#DDD4C7" stroke-width="3"/>
+  <text x="165" y="58" class="display" font-size="28" fill="#071629" text-anchor="middle">THE THREE TESTS</text>
+  <g transform="translate(30 105)">
+    <circle cx="36" cy="36" r="31" fill="#E2F0E8" stroke="#2F7D5B" stroke-width="4"/>
+    <path d="M22 36l10 11 20-25" fill="none" stroke="#2F7D5B" stroke-width="5" stroke-linecap="round"/>
+    <text x="100" y="32" class="display" font-size="21" fill="#10233B">SAFETY</text>
+    <text x="100" y="61" class="body" font-size="17" fill="#575751">Does the rule constrain</text><text x="100" y="82" class="body" font-size="17" fill="#575751">measurable risk?</text>
+  </g>
+  <line x1="30" y1="226" x2="300" y2="226" stroke="#DDD4C7" stroke-width="2"/>
+  <g transform="translate(30 245)">
+    <circle cx="36" cy="36" r="31" fill="#F6EBDD" stroke="#A86A2A" stroke-width="4"/>
+    <path d="M17 36h38M36 17v38" stroke="#A86A2A" stroke-width="4"/>
+    <text x="100" y="32" class="display" font-size="21" fill="#10233B">COMPETITION</text>
+    <text x="100" y="61" class="body" font-size="17" fill="#575751">Can credible entrants</text><text x="100" y="82" class="body" font-size="17" fill="#575751">meet the same bar?</text>
+  </g>
+  <line x1="30" y1="366" x2="300" y2="366" stroke="#DDD4C7" stroke-width="2"/>
+  <g transform="translate(30 385)">
+    <circle cx="36" cy="36" r="31" fill="#DCE8F0" stroke="#49749A" stroke-width="4"/>
+    <path d="M24 27l-13 9 13 9M48 27l13 9-13 9" fill="none" stroke="#49749A" stroke-width="4" stroke-linecap="round"/>
+    <text x="100" y="32" class="display" font-size="20" fill="#10233B">REPLACEABILITY</text>
+    <text x="100" y="61" class="body" font-size="17" fill="#575751">Can critical users switch</text><text x="100" y="82" class="body" font-size="17" fill="#575751">without losing control?</text>
+  </g>
+</g>
+
+<rect x="260" y="810" width="1080" height="58" rx="29" fill="#071629"/>
+<text x="800" y="848" class="display" font-size="24" fill="#FFFFFF" text-anchor="middle">GOOD REGULATION MAKES THE GATE GOVERNABLE - NOT OWNED.</text>
+</svg>

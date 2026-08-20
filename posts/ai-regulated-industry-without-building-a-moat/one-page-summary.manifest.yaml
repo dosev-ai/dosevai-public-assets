@@ -1,0 +1,42 @@
+schema_version: 1
+profile: image
+asset_id: pwp.ai-regulation.one-page-summary
+visual_id: pwp.ai-regulation.one-page-summary
+content_id: post:ai-regulated-industry-without-building-a-moat
+source_class: project_owned
+project: personal-web-presence
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/ai-regulated-industry-without-building-a-moat/one-page-summary.svg
+mime_type: image/svg+xml
+sha256: 126a5acfe7f3494d1080b450a885b7b6b0ee215465c83092ffe970738c2bd25f
+role: one_page_summary
+sequence: 3
+step_key: one-page-summary
+title: AI regulation without an incumbent moat - one-page summary
+alt: >-
+  One-page summary covering the two races, strategic-infrastructure dimension, upstream gate regulation and a moat test of Safety, Competition and Replaceability.
+caption: >-
+  A one-page visual summary of the article thesis and operating tests.
+semantic_description: >-
+  The optional one-page companion distills the article into four blocks: the capability and rulebook races; frontier AI as strategic infrastructure; regulation focused on upstream capability and provider gates rather than every user; and a three-part moat test. It is intentionally lighter than the full article and directs readers back to the canonical text for sources and nuance.
+claims:
+  - Frontier AI regulation can be organized around upstream capability, provider and market-access controls.
+  - Strategic dependence on a single model provider can create resilience and control concerns for critical users.
+  - Safety, competition and replaceability provide a compact editorial test for the resulting regime.
+boundaries:
+  - The one-page summary does not replace the article source list or legal nuance.
+  - The summary does not claim the proposed architecture is enacted global policy.
+  - The summary does not imply that all AI users need licenses or that all frontier systems are military systems.
+audience:
+  - Executives
+  - Policy leaders
+  - AI governance practitioners
+creation_method: original_svg
+contributor: OpenAI ChatGPT under owner direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: false
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: "2026-08-20"

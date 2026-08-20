@@ -1,0 +1,41 @@
+schema_version: 1
+profile: image
+asset_id: pwp.ai-regulation.two-races-one-gate-cover
+visual_id: pwp.ai-regulation.two-races-one-gate-cover
+content_id: post:ai-regulated-industry-without-building-a-moat
+source_class: project_owned
+project: personal-web-presence
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/ai-regulated-industry-without-building-a-moat/cover.svg
+mime_type: image/svg+xml
+sha256: 13dc6a9d2005baf368fef412038912014469d3e7adb7799b03d7b796ad7a1aff
+role: explanatory_cover
+sequence: 0
+step_key: cover
+title: AI Is Becoming a Regulated Industry. Don't Let Regulation Become the Moat.
+alt: >-
+  Two paths labelled Capability and Rulebook converge on a central frontier-capability gate, with Safety, Competition and Replaceability shown as the tests for good regulation.
+caption: >-
+  The frontier race now has two tracks: capability and the rulebook. Regulation must constrain risk without making the gate affordable only to incumbents.
+semantic_description: >-
+  A light executive cover uses an abstract gate as the central metaphor. The Capability path and the Rulebook path converge on frontier capability. A lower strip names Safety, Competition and Replaceability as the three tests. The visual presents regulation as a control point and does not imply conspiracy, coordination, monopoly intent or that frontier models are weapons.
+claims:
+  - Frontier AI competition increasingly includes both capability and governance standards.
+  - A regulatory design can be evaluated for safety, competition and replaceability.
+boundaries:
+  - The visual does not allege collusion, regulatory capture intent or monopoly intent by any model provider.
+  - The visual does not equate frontier AI with weapons or imply that all AI use requires licensing.
+  - The visual is an editorial synthesis, not a statement of settled global regulation.
+audience:
+  - C-suite leaders
+  - Policy and governance leaders
+  - AI platform leaders
+creation_method: original_svg
+contributor: OpenAI ChatGPT under owner direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: true
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: "2026-08-20"
