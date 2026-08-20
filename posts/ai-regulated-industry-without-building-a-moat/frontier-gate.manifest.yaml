@@ -1,0 +1,42 @@
+schema_version: 1
+profile: image
+asset_id: pwp.ai-regulation.frontier-gate-tests
+visual_id: pwp.ai-regulation.frontier-gate-tests
+content_id: post:ai-regulated-industry-without-building-a-moat
+source_class: project_owned
+project: personal-web-presence
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/ai-regulated-industry-without-building-a-moat/frontier-gate.svg
+mime_type: image/svg+xml
+sha256: f8fb47d87a087dbe88db5c95a32b87298fe224a125df816c14570d354d006c95
+role: explanatory_inline
+section_anchor: every-rule-needs-a-moat-test
+sequence: 1
+step_key: frontier-gate
+title: Two races, one frontier-capability gate
+alt: >-
+  The Capability Race and Rulebook Race converge on a Frontier Capability gate, followed by three tests: Safety, Competition and Replaceability.
+caption: >-
+  The safety test is necessary but not sufficient. A durable frontier-AI regime also needs competition and replaceability tests.
+semantic_description: >-
+  The diagram has two source lanes: Capability Race and Rulebook Race. They converge on a central Frontier Capability gate, which then points to three design tests. Safety asks whether rules constrain measurable risk. Competition asks whether credible entrants can meet the same bar. Replaceability asks whether critical users can switch providers without losing safety, evidence, continuity or lawful control.
+claims:
+  - Frontier capability and frontier governance standards can evolve in parallel.
+  - Regulatory design can be tested for measurable safety outcomes, competitive accessibility and supplier replaceability.
+boundaries:
+  - The visual does not state that model providers coordinate policy positions.
+  - The visual does not claim any specific threshold or licensing system is settled law.
+  - The visual does not imply that supplier replaceability eliminates all concentration risk.
+audience:
+  - Executives
+  - Policy leaders
+  - AI governance practitioners
+creation_method: original_svg
+contributor: OpenAI ChatGPT under owner direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: true
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: "2026-08-20"
