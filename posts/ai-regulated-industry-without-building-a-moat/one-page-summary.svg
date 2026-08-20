@@ -13,9 +13,9 @@
 </defs>
 <rect width="1200" height="1600" fill="#F7F2E8"/>
 <rect width="1200" height="18" fill="#071629"/>
-<text x="70" y="94" class="display" font-size="54" fill="#071629">AI IS BECOMING A REGULATED INDUSTRY.</text>
-<text x="70" y="157" class="display" font-size="49" fill="#C46F3B">DON'T LET REGULATION BECOME THE MOAT.</text>
-<text x="70" y="210" class="body" font-size="24" fill="#575751">A one-page executive summary</text>
+<text x="70" y="94" class="display" font-size="44" fill="#071629">AI IS BECOMING A REGULATED INDUSTRY.</text>
+<text x="70" y="151" class="display" font-size="42" fill="#C46F3B">DON'T LET REGULATION BECOME THE MOAT.</text>
+<text x="70" y="204" class="body" font-size="24" fill="#575751">A one-page executive summary</text>
 
 <g transform="translate(70 255)">
   <rect width="1060" height="160" rx="24" fill="#FFFFFF" stroke="#DDD4C7" stroke-width="3"/>
