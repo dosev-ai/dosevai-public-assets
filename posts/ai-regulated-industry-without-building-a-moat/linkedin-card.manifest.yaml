@@ -1,0 +1,41 @@
+schema_version: 1
+profile: image
+asset_id: pwp.ai-regulation.linkedin-two-races-one-gate
+visual_id: pwp.ai-regulation.linkedin-two-races-one-gate
+content_id: post:ai-regulated-industry-without-building-a-moat
+source_class: project_owned
+project: personal-web-presence
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/ai-regulated-industry-without-building-a-moat/linkedin-card.svg
+mime_type: image/svg+xml
+sha256: 69723a2c49774fd8f6150cc5f68d2f33c15ec263022bcae8a996c79883ca76d4
+role: social_card
+sequence: 2
+step_key: linkedin-card
+title: AI regulation without an incumbent moat - LinkedIn card
+alt: >-
+  Vertical social card showing Capability and Rulebook paths converging on a Frontier Capability gate under the headline Do not let regulation become the moat.
+caption: >-
+  Two races, one gate: the question is how to constrain frontier risk without letting compliance become an incumbent moat.
+semantic_description: >-
+  A mobile-first 4:5 social derivative keeps only the headline, the two-races mechanism, the frontier gate and the engagement question. It intentionally omits dense references and detailed policy claims so the LinkedIn post text and canonical article carry the evidence.
+claims:
+  - The article frames frontier AI as a capability race and a rulebook race.
+  - The article asks how regulation can constrain risk without entrenching incumbents.
+boundaries:
+  - The social card is a distribution derivative, not the canonical article or evidence surface.
+  - The card does not include unverified company motives or geopolitical claims.
+  - The card should only be paired with the production-verified canonical article URL after publication.
+audience:
+  - LinkedIn professional audience
+  - Executives
+  - AI governance practitioners
+creation_method: original_svg
+contributor: OpenAI ChatGPT under owner direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: false
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: "2026-08-20"
