@@ -1,0 +1,44 @@
+schema_version: 1
+profile: image
+asset_id: pwp.ai-economics.bubble-dependency-cover
+visual_id: pwp.ai-economics.bubble-dependency-cover
+content_id: post:the-ai-bubble-is-only-one-risk
+source_class: project_owned
+project: personal-web-presence
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/the-ai-bubble-is-only-one-risk/cover.svg
+mime_type: image/svg+xml
+sha256: f78e40f59985dafdd56961d9c87848b8e3739505f0faaedfa1298bec043e4fa8
+role: explanatory_cover
+sequence: 0
+step_key: cover
+title: The AI Bubble Is Only One Risk
+alt: >-
+  A solid production dependency chain runs from power to compute to models to enterprise workflows while a lighter dashed market and valuation bubble surrounds the compute and model stages; a lower strip reads Price, Serviceable Volume and Mix.
+caption: >-
+  Market valuations can expand or contract while the production dependency remains: power, compute, models and enterprise workflows are linked by the economics of Price x Serviceable Volume x Mix.
+semantic_description: >-
+  A light executive cover shows four connected nodes labelled Power, Compute, Models and Workflows. Compute and Models sit inside a translucent dashed market and valuation bubble, but the solid dependency spine continues through the bubble to enterprise workflows. A lower analytical strip names Price, Serviceable Volume and Mix. The visual presents the article's systemic-dependency thesis and does not claim that a market correction, compute constraint or any specific supplier price change is inevitable or causally linked.
+claims:
+  - AI production dependency spans infrastructure, compute, models and enterprise workflows.
+  - Market and valuation cycles can change independently of operational dependency.
+  - Price, serviceable volume and mix are useful analytical lenses for AI economics.
+boundaries:
+  - The bubble is a conceptual market-cycle metaphor, not a forecast of a crash or valuation outcome.
+  - The visual does not claim that compute scarcity caused any specific subscription or API price change.
+  - The visual does not identify a winning provider or imply that dependency on one provider is inevitable.
+  - Channel-specific pricing is an article trigger, not the cover's central causal claim.
+audience:
+  - CFO and finance transformation leaders
+  - CIO and enterprise AI platform owners
+  - Procurement and technology category leaders
+  - Strategy and commercial finance teams
+creation_method: original_svg
+contributor: OpenAI ChatGPT under owner direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: true
+external_resources: false
+scripts: false
+remote_fonts: false
+created_at: "2026-08-25"
