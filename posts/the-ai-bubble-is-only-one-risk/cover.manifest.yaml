@@ -8,7 +8,7 @@ project: personal-web-presence
 source_repository: dosev-ai/dosevai-public-assets
 source_path: posts/the-ai-bubble-is-only-one-risk/cover.svg
 mime_type: image/svg+xml
-sha256: f78e40f59985dafdd56961d9c87848b8e3739505f0faaedfa1298bec043e4fa8
+sha256: 052e2a8b202f866398371c3cf69839f64e9ea9a07c1a457fbadf952740156b13
 role: explanatory_cover
 sequence: 0
 step_key: cover
