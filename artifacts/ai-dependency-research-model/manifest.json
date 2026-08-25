@@ -1,0 +1,36 @@
+{
+  "artifact_id": "ai-dependency-research-model",
+  "artifact_type": "research_workbook",
+  "schema_version": "1.0",
+  "status": "public_supporting_artifact",
+  "content_id": "post:the-ai-bubble-is-only-one-risk",
+  "recommended_version": "0.2",
+  "evidence_cutoff": "2026-08-24",
+  "release_date": "2026-08-25",
+  "version_policy": "released_version_folders_are_immutable",
+  "public_safe": true,
+  "license": "CC0-1.0",
+  "native_excel_cached_recalculation": "not_claimed",
+  "versions": [
+    {
+      "version": "0.2",
+      "state": "public_supporting_artifact",
+      "files": {
+        "workbook": {
+          "path": "v0.2/ai-dependency-research-matrix-v0.2.xlsx",
+          "sha256": "694d5b037dbcc997ea0635d58235d66fc36f2f2bccc1f2f7a35f790380f30645"
+        },
+        "structural_scan": {
+          "path": "v0.2/ai-dependency-research-matrix-v0.2-scan.json",
+          "sha256": "6eb778f26f95646c5a900e487a68dfc90a86b3142b7eba60e8afb8270d145cce"
+        }
+      },
+      "workbook_profile": {
+        "sheets": 15,
+        "excel_tables": 19,
+        "formulas": 12592
+      }
+    }
+  ],
+  "repository_readme_sha256": "1df14308d01d88d874f0ae2dfd9f5e9049938fdcfc05dcf995990db563ba3114"
+}
