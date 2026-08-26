@@ -29,7 +29,7 @@ The public workbook contains generic/public research logic only. A user may comb
 
 - Public version: `0.2`
 - Evidence cutoff: `2026-08-24`
-- Public release: `2026-08-25`
+- Public release: `2026-08-26`
 - Workbook SHA-256: `694d5b037dbcc997ea0635d58235d66fc36f2f2bccc1f2f7a35f790380f30645`
 
 Released version folders are immutable. A material research/model change creates a new version rather than silently rewriting this snapshot.
@@ -38,7 +38,7 @@ The analysis is intended to be refreshed at the end of September 2026 so the Aug
 
 ## Excel note
 
-The workbook requests automatic/full recalculation when opened. Native Excel cached-value recalculation was not performed as part of this public packaging step, so open the file in Excel and allow calculation before relying on generated formula surfaces.
+This release intentionally preserves the governed workbook's formulas, metadata/control surfaces and native Excel behavior. It therefore does not conform to the repository's default formula-free public-workbook profile. Publication of this specific artifact was explicitly owner-authorized as an administrative exception; that exception does not change the repository-wide default validator. Native cached-value recalculation is not claimed; open the file in Excel and allow calculation before relying on generated formula surfaces.
 
 ## License
 
