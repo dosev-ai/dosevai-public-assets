@@ -1,0 +1,25 @@
+{
+  "artifact_id": "ai-dependency-research-model",
+  "version": "0.2",
+  "evidence_cutoff": "2026-08-24",
+  "release_date": "2026-08-26",
+  "workbook_sha256": "694d5b037dbcc997ea0635d58235d66fc36f2f2bccc1f2f7a35f790380f30645",
+  "sheet_count": 15,
+  "excel_table_count": 19,
+  "formula_count": 12592,
+  "formula_error_token_scan": "PASS",
+  "worksheet_view_ooxml": "PASS",
+  "metadata_consistency": "PASS",
+  "public_safety_scan": "PASS",
+  "unexpected_logical_delta": "NONE",
+  "readiness": {
+    "safe_to_open": true,
+    "metadata_consistent": true,
+    "ready_for_review": true,
+    "ready_to_distribute": true
+  },
+  "native_excel_cached_recalculation": "NOT_CLAIMED",
+  "repository_default_profile": "EXPECTED_FAIL_FORMULA_FREE_PROFILE",
+  "repository_profile_disposition": "OWNER_ADMIN_OVERRIDE_FOR_THIS_ARTIFACT_VERSION_ONLY",
+  "limitation": "Workbook requests full recalculation on open; native cached formula values were not refreshed during public packaging."
+}
