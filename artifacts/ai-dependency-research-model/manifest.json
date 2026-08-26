@@ -6,11 +6,17 @@
   "content_id": "post:the-ai-bubble-is-only-one-risk",
   "recommended_version": "0.2",
   "evidence_cutoff": "2026-08-24",
-  "release_date": "2026-08-25",
+  "release_date": "2026-08-26",
   "version_policy": "released_version_folders_are_immutable",
   "public_safe": true,
   "license": "CC0-1.0",
   "native_excel_cached_recalculation": "not_claimed",
+  "repository_profile_exception": {
+    "profile": "default_formula_free_public_workbook",
+    "decision": "owner_admin_override",
+    "scope": "this_artifact_version_only",
+    "reason": "Preserve the governed research model's inspectable formulas, X/Y projection logic, metadata and Copilot-facing workbook behavior as part of the supporting article artifact. The repository-wide validator remains unchanged."
+  },
   "versions": [
     {
       "version": "0.2",
@@ -31,6 +37,5 @@
         "formulas": 12592
       }
     }
-  ],
-  "repository_readme_sha256": "1df14308d01d88d874f0ae2dfd9f5e9049938fdcfc05dcf995990db563ba3114"
+  ]
 }
