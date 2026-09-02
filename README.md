@@ -48,6 +48,18 @@ Governed SVG assets must:
 - have an adjacent `.manifest.yaml` file with matching provenance, alt text, caption, semantic description, claims, boundaries, creation method, license, and public-safety state;
 - use a new immutable path or commit-pinned URL when historical public evidence must remain reproducible.
 
+### SVG preflight before external review
+
+For a changed governed SVG, prepare one definitive candidate before requesting hosted review:
+
+```text
+python scripts/asset_manifest_svg_preflight.py posts/<post-slug>/<asset>.svg
+```
+
+The helper regenerates the adjacent manifest from the exact SVG bytes through the repository packager, validates the package, and renders full/card/mobile previews with the repository fallback-font profile. Preview evidence is written under `.preflight/svg/` and is intentionally untracked.
+
+Inspect the generated preview set as one whole-artifact pass. Check the headline and lead, every bounded label/card title, summaries/checkpoints, footer/review text, and edge-adjacent text. If one same-class text-fit defect is found, sweep the complete artifact for that class before publishing the next review candidate. The preview gate reduces avoidable repair loops; it does not replace exact-head CI or independent review.
+
 ## Working artifact contract
 
 Working artifacts must:
