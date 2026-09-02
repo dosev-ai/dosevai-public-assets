@@ -26,7 +26,7 @@
   <rect x="450" y="155" width="690" height="560" rx="30" fill="#fbfbff" stroke="#7c72e8" stroke-width="3"/>
   <circle cx="490" cy="200" r="16" fill="#7c72e8"/><text x="490" y="206" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="700" fill="#fff">3</text>
   <text class="boxTitle" x="520" y="207">Attention context — the active mental room</text>
-  <text class="body" x="490" y="244">A deliberately small projection of the project that contains only the lanes currently deserving attention.</text>
+  <text class="body" x="490" y="244"><tspan x="490">A small projection of the project containing only the lanes</tspan><tspan x="490" dy="22">that currently deserve attention.</tspan></text>
 
   <g transform="translate(490 285)">
     <rect x="0" y="0" width="185" height="345" rx="18" fill="#f0f2ff" stroke="#858bea" stroke-width="1.8"/>
