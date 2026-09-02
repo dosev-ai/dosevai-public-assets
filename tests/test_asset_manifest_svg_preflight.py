@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import yaml
@@ -15,11 +16,19 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "asset_manifest_svg_preflight.py"
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from asset_manifest_svg_preflight import resolve_evidence_path  # noqa: E402
+from asset_manifest_svg_preflight import fallback_svg_bytes, resolve_evidence_path  # noqa: E402
 
 SVG = '''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
 <title id="title">Fallback preview test</title><desc id="desc">Safe governed SVG.</desc>
 <rect width="1600" height="900" fill="#ffffff"/><text x="50" y="100" font-family="system-ui,sans-serif" font-size="48" font-weight="700">Fallback text</text></svg>'''
+
+SVG_IMPORTANT_FONTS = '''<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400" role="img" aria-labelledby="title desc">
+<title id="title">Important font override test</title><desc id="desc">Exercises class and inline important font declarations.</desc>
+<style>.headline { font-family: Inter !important; font-size: 48px; }</style>
+<text class="headline" x="20" y="80" font-family="Arial">Class important<tspan style="font-family: Georgia !important; font-weight: 700">Inline important</tspan></text>
+</svg>'''
+
+SVG_NS = "http://www.w3.org/2000/svg"
 
 
 def manifest_data(asset: Path, source_path: str | None = None, asset_id: str = "test.svg-preflight") -> dict:
@@ -75,6 +84,27 @@ class SvgPreflightTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             absolute = Path(directory).resolve()
             self.assertEqual(resolve_evidence_path(absolute), absolute)
+
+    def test_fallback_font_overrides_class_and_inline_important_rules(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            svg = Path(directory) / "important.svg"
+            svg.write_text(SVG_IMPORTANT_FONTS, encoding="utf-8")
+
+            rendered = fallback_svg_bytes(svg, "DejaVu Sans")
+            root = ET.fromstring(rendered)
+            text_nodes = [
+                node
+                for node in root.iter()
+                if node.tag in {f"{{{SVG_NS}}}text", f"{{{SVG_NS}}}tspan"}
+            ]
+            self.assertEqual(len(text_nodes), 2)
+            for node in text_nodes:
+                style = node.attrib.get("style", "")
+                self.assertIn('font-family: "DejaVu Sans", sans-serif !important', style)
+                self.assertNotIn("font-family: Georgia", style)
+                self.assertNotIn("font-family: Inter", style)
+                self.assertNotIn("font-family", node.attrib)
+            self.assertIn("font-weight: 700", text_nodes[1].attrib["style"])
 
     def test_refreshes_manifest_and_renders_fallback_preview_set(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
