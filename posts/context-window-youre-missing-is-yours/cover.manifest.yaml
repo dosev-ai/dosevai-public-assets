@@ -8,7 +8,7 @@ project: personal-web-presence
 source_repository: dosev-ai/dosevai-public-assets
 source_path: posts/context-window-youre-missing-is-yours/cover.svg
 mime_type: image/svg+xml
-sha256: dd2e968fc4ab94be92785744a06fd5513a4679e7cc84412fe9bb36cfa4c38576
+sha256: 6d04050436876aea09f40dd749bbc8d1401b2c929af248cdf1708ef782149825
 role: explanatory_cover
 section_anchor: null
 sequence: 0
