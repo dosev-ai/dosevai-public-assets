@@ -8,7 +8,7 @@ project: personal-web-presence
 source_repository: dosev-ai/dosevai-public-assets
 source_path: posts/context-window-youre-missing-is-yours/attention-envelope.svg
 mime_type: image/svg+xml
-sha256: fee54ceda87d19a0c53cab2c1e78ad1f880858f0e5eec4feb9e52b64314c6a0e
+sha256: bde59b56f100f0ce185b92a762a1b3eb627b79f3c678444ea108fabf980d1a0a
 role: body_diagram
 section_anchor: null
 sequence: 1
