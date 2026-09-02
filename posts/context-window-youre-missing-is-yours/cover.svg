@@ -12,7 +12,7 @@
   <rect width="1600" height="900" fill="url(#bg)"/>
 
   <text class="eyebrow" x="88" y="120">FOCUS BY DESIGN</text>
-  <text class="h1" x="88" y="195"><tspan x="88">The Context Window</tspan><tspan x="88" dy="66">You're Missing</tspan><tspan x="88" dy="66">Is Yours</tspan></text>
+  <text class="h1" x="88" y="195"><tspan x="88">The Context</tspan><tspan x="88" dy="66">Window You're</tspan><tspan x="88" dy="66">Missing Is Yours</tspan></text>
   <text class="lead" x="88" y="420"><tspan x="88">Persistent working sets across devices.</tspan><tspan x="88" dy="38">Bounded lanes inside one active project.</tspan><tspan x="88" dy="38">Recoverable focus instead of more open threads.</tspan></text>
 
   <g transform="translate(88 585)">
