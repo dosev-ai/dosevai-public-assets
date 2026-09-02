@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Human Attention Context as a Recoverable Envelope</title>
+  <desc id="desc">A nested model for AI-heavy work. Durable truth sits in the system of record and project context. The active attention context is a smaller envelope containing separate orchestrator, delivery, and review lanes, each with its own session or model context, role, and authorization boundary. An attention checkpoint supports re-entry, then the human chooses which lane needs judgment next.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f5f8fc"/></linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#384760"/></marker>
+    <style>
+      .title{font:700 44px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#0f1b33}.subtitle{font:400 21px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#4d5a72}.boxTitle{font:700 19px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#16243d}.body{font:400 15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#44516a}.small{font:600 13px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#64728a}.laneTitle{font:700 17px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#15243d}.mini{font:600 12px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#59667e}.pill{font:700 12px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#47556d}.flow{fill:none;stroke:#384760;stroke-width:2.5;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <text class="title" x="800" y="68" text-anchor="middle">Attention Context Is an Envelope, Not Another Database</text>
+  <text class="subtitle" x="800" y="105" text-anchor="middle">Durable project truth outside. Bounded model/session lanes inside. Re-entry before the next human decision.</text>
+
+  <rect x="70" y="185" width="285" height="185" rx="20" fill="#eef4ff" stroke="#7ba7e8" stroke-width="2"/>
+  <circle cx="105" cy="225" r="14" fill="#3b82f6"/><text x="105" y="231" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#fff">1</text>
+  <text class="boxTitle" x="132" y="232">System of record</text>
+  <text class="body" x="100" y="270"><tspan x="100">What is actually true?</tspan><tspan x="100" dy="25">Actions, approvals, evidence,</tspan><tspan x="100" dy="25">repositories, verified state</tspan></text>
+
+  <rect x="70" y="420" width="285" height="185" rx="20" fill="#eff8f4" stroke="#79c8a5" stroke-width="2"/>
+  <circle cx="105" cy="460" r="14" fill="#18a26b"/><text x="105" y="466" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#fff">2</text>
+  <text class="boxTitle" x="132" y="467">Project context</text>
+  <text class="body" x="100" y="505"><tspan x="100">What belongs to this work?</tspan><tspan x="100" dy="25">Goal, scope, history, files,</tspan><tspan x="100" dy="25">decisions, parked branches</tspan></text>
+  <path class="flow" d="M212 370 V410"/>
+
+  <rect x="450" y="155" width="690" height="560" rx="30" fill="#fbfbff" stroke="#7c72e8" stroke-width="3"/>
+  <circle cx="490" cy="200" r="16" fill="#7c72e8"/><text x="490" y="206" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="700" fill="#fff">3</text>
+  <text class="boxTitle" x="520" y="207">Attention context — the active mental room</text>
+  <text class="body" x="490" y="244"><tspan x="490">A small projection of the project containing only the lanes</tspan><tspan x="490" dy="22">that currently deserve attention.</tspan></text>
+
+  <g transform="translate(490 285)">
+    <rect x="0" y="0" width="185" height="345" rx="18" fill="#f0f2ff" stroke="#858bea" stroke-width="1.8"/>
+    <circle cx="24" cy="31" r="8" fill="#5b64e8"/><text class="laneTitle" x="42" y="37">Orchestrator</text>
+    <text class="mini" x="20" y="74">purpose</text><text class="body" x="20" y="98">goal • scope</text>
+    <line x1="20" y1="119" x2="165" y2="119" stroke="#d6dbeb"/>
+    <text class="mini" x="20" y="146">session / model context</text>
+    <rect x="20" y="162" width="135" height="10" rx="5" fill="#cbd1f6"/><rect x="20" y="181" width="118" height="10" rx="5" fill="#dfe2f7"/><rect x="20" y="200" width="128" height="10" rx="5" fill="#dfe2f7"/>
+    <text class="mini" x="20" y="236">authorization boundary</text><rect x="20" y="251" width="145" height="34" rx="10" fill="#e0e4ff"/><text class="pill" x="32" y="273">plan • coordinate</text>
+    <text class="mini" x="20" y="317">human check</text><text class="body" x="20" y="339">What moves next?</text>
+
+    <rect x="205" y="0" width="185" height="345" rx="18" fill="#eff9f5" stroke="#68c49b" stroke-width="1.8"/>
+    <circle cx="229" cy="31" r="8" fill="#18a26b"/><text class="laneTitle" x="247" y="37">Delivery</text>
+    <text class="mini" x="225" y="74">purpose</text><text class="body" x="225" y="98">task • build</text>
+    <line x1="225" y1="119" x2="370" y2="119" stroke="#d6e9e1"/>
+    <text class="mini" x="225" y="146">session / model context</text>
+    <rect x="225" y="162" width="135" height="10" rx="5" fill="#b9dfcf"/><rect x="225" y="181" width="112" height="10" rx="5" fill="#d8eee5"/><rect x="225" y="200" width="125" height="10" rx="5" fill="#d8eee5"/>
+    <text class="mini" x="225" y="236">authorization boundary</text><rect x="225" y="251" width="145" height="34" rx="10" fill="#dff3eb"/><text class="pill" x="237" y="273">execute • validate</text>
+    <text class="mini" x="225" y="317">human check</text><text class="body" x="225" y="339">Approve or repair?</text>
+
+    <rect x="410" y="0" width="185" height="345" rx="18" fill="#fff6eb" stroke="#e8ab63" stroke-width="1.8"/>
+    <circle cx="434" cy="31" r="8" fill="#ed8b2c"/><text class="laneTitle" x="452" y="37">Review / Risk</text>
+    <text class="mini" x="430" y="74">purpose</text><text class="body" x="430" y="98">challenge • verify</text>
+    <line x1="430" y1="119" x2="575" y2="119" stroke="#eadfce"/>
+    <text class="mini" x="430" y="146">independent context</text>
+    <rect x="430" y="162" width="135" height="10" rx="5" fill="#e8cda9"/><rect x="430" y="181" width="113" height="10" rx="5" fill="#f2dfc5"/><rect x="430" y="200" width="126" height="10" rx="5" fill="#f2dfc5"/>
+    <text class="mini" x="430" y="236">authorization boundary</text><rect x="430" y="251" width="145" height="34" rx="10" fill="#fff0db"/><text class="pill" x="442" y="273">review • challenge</text>
+    <text class="mini" x="430" y="317">human check</text><text class="body" x="430" y="339">Enough evidence?</text>
+  </g>
+  <text class="small" x="795" y="681" text-anchor="middle">Related work stays in one room. Different roles stay in different lanes.</text>
+
+  <path class="flow" d="M355 512 C400 512 410 440 444 440"/>
+
+  <rect x="1215" y="230" width="300" height="190" rx="22" fill="#f5f1ff" stroke="#a282e6" stroke-width="2"/>
+  <circle cx="1252" cy="270" r="14" fill="#8b5cf6"/><text x="1252" y="276" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#fff">4</text>
+  <text class="boxTitle" x="1279" y="277">Attention checkpoint</text>
+  <text class="body" x="1245" y="317"><tspan x="1245">Objective • active lanes</tspan><tspan x="1245" dy="24">Unresolved decision • parked work</tspan><tspan x="1245" dy="24">Pointer to durable project state</tspan></text>
+
+  <rect x="1215" y="485" width="300" height="190" rx="22" fill="#fff8ed" stroke="#e2a557" stroke-width="2"/>
+  <circle cx="1252" cy="525" r="14" fill="#ed8b2c"/><text x="1252" y="531" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#fff">5</text>
+  <text class="boxTitle" x="1279" y="532">Next human decision</text>
+  <text class="body" x="1245" y="572"><tspan x="1245">Which lane actually needs</tspan><tspan x="1245" dy="25">judgment now?</tspan></text>
+  <rect x="1245" y="626" width="235" height="30" rx="15" fill="#fff0d8"/><text class="pill" x="1362" y="646" text-anchor="middle">choose • decide • return</text>
+
+  <path class="flow" d="M1140 345 H1205"/>
+  <path class="flow" d="M1365 420 V475"/>
+
+  <path d="M1365 675 C1365 795 650 800 280 665 C225 645 215 625 215 610" fill="none" stroke="#7c72e8" stroke-width="2.5" stroke-dasharray="8 8" marker-end="url(#arrow)"/>
+  <text class="small" x="785" y="835" text-anchor="middle">If the live tabs or sessions disappear, reconstruct the room from durable project context — not from memory alone.</text>
+</svg>

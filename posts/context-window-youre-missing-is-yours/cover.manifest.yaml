@@ -1,0 +1,37 @@
+schema_version: 1
+profile: image
+asset_id: pwp.human-attention-context.cover
+visual_id: pwp.human-attention-context.cover
+content_id: post:context-window-youre-missing-is-yours
+source_class: project_owned
+project: personal-web-presence
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/context-window-youre-missing-is-yours/cover.svg
+mime_type: image/svg+xml
+sha256: 6d04050436876aea09f40dd749bbc8d1401b2c929af248cdf1708ef782149825
+role: explanatory_cover
+section_anchor: null
+sequence: 0
+step_key: persistent-working-set
+alt: >-
+  Editorial illustration showing persistent project groups across a phone and desktop. The active Work context is expanded into separate Orchestrator/PM and Delivery/Execution lanes with their own session context and authorization boundaries.
+caption: >-
+  A persistent working set can keep the project room visible across devices while different AI sessions remain separated by role, scope, and authority.
+semantic_description: >-
+  The cover shows a finite set of named working contexts on a phone and desktop. One active project is expanded on the desktop into two bounded lanes: an Orchestrator/PM lane for broad objective, scope, blockers, and coordination; and a Delivery/Execution lane for a narrower implementation task and validation. Each lane shows its own session/model context and authorization boundary. The browser grouping is represented as a human-visible organization layer only; it does not itself enforce permissions or replace the system of record.
+claims:
+  - The visual represents a personal operating model in which a small set of working contexts can remain visible across devices.
+  - Within one active project, separate AI sessions can be organized into bounded lanes with different roles and authorization boundaries.
+  - The browser or workspace representation is a live attention projection, not the project system of record.
+boundaries:
+  - The visual does not claim that browser tab groups themselves enforce authorization or governance.
+  - The visual does not claim a universal limit on the number of working contexts a person can manage.
+  - The visual is a sanitized conceptual illustration and does not reproduce private screenshots or real conversation content.
+creation_method: original_svg_recreated_from_owner_approved_concept
+contributor: OpenAI ChatGPT with Delyan Dosev direction
+license: CC0-1.0
+public_safe: true
+guide_eligible: true
+external_resources: false
+scripts: false
+remote_fonts: false
