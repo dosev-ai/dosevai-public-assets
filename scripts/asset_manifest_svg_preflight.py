@@ -77,13 +77,9 @@ def fallback_svg_bytes(svg: Path, font_family: str) -> bytes:
     if root.tag != f"{{{SVG_NS}}}svg":
         raise ValueError("SVG namespace/root required")
 
-    text_node_count = 0
     for node in root.iter():
         if node.tag in {f"{{{SVG_NS}}}text", f"{{{SVG_NS}}}tspan"}:
             force_inline_fallback_font(node, font_family)
-            text_node_count += 1
-    if text_node_count == 0:
-        raise ValueError("fallback-font preflight requires at least one SVG text or tspan node")
 
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
