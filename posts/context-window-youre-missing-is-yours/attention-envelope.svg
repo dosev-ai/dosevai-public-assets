@@ -54,7 +54,7 @@
     <text class="mini" x="430" y="146">independent context</text>
     <rect x="430" y="162" width="135" height="10" rx="5" fill="#e8cda9"/><rect x="430" y="181" width="113" height="10" rx="5" fill="#f2dfc5"/><rect x="430" y="200" width="126" height="10" rx="5" fill="#f2dfc5"/>
     <text class="mini" x="430" y="236">authorization boundary</text><rect x="430" y="251" width="145" height="34" rx="10" fill="#fff0db"/><text class="pill" x="442" y="273">review • challenge</text>
-    <text class="mini" x="430" y="317">human check</text><text class="body" x="430" y="339">Is the evidence enough?</text>
+    <text class="mini" x="430" y="317">human check</text><text class="body" x="430" y="339">Enough evidence?</text>
   </g>
   <text class="small" x="795" y="681" text-anchor="middle">Related work stays in one room. Different roles stay in different lanes.</text>
 
