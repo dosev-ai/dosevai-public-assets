@@ -30,7 +30,7 @@
 
   <g transform="translate(490 285)">
     <rect x="0" y="0" width="185" height="345" rx="18" fill="#f0f2ff" stroke="#858bea" stroke-width="1.8"/>
-    <circle cx="24" cy="31" r="8" fill="#5b64e8"/><text class="laneTitle" x="42" y="37">Orchestrator / PM</text>
+    <circle cx="24" cy="31" r="8" fill="#5b64e8"/><text class="laneTitle" x="42" y="37">Orchestrator</text>
     <text class="mini" x="20" y="74">purpose</text><text class="body" x="20" y="98">goal • scope • blockers</text>
     <line x1="20" y1="119" x2="165" y2="119" stroke="#d6dbeb"/>
     <text class="mini" x="20" y="146">session / model context</text>
