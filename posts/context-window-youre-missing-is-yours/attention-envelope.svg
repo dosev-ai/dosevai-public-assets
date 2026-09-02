@@ -31,7 +31,7 @@
   <g transform="translate(490 285)">
     <rect x="0" y="0" width="185" height="345" rx="18" fill="#f0f2ff" stroke="#858bea" stroke-width="1.8"/>
     <circle cx="24" cy="31" r="8" fill="#5b64e8"/><text class="laneTitle" x="42" y="37">Orchestrator</text>
-    <text class="mini" x="20" y="74">purpose</text><text class="body" x="20" y="98">goal • scope • blockers</text>
+    <text class="mini" x="20" y="74">purpose</text><text class="body" x="20" y="98">goal • scope</text>
     <line x1="20" y1="119" x2="165" y2="119" stroke="#d6dbeb"/>
     <text class="mini" x="20" y="146">session / model context</text>
     <rect x="20" y="162" width="135" height="10" rx="5" fill="#cbd1f6"/><rect x="20" y="181" width="118" height="10" rx="5" fill="#dfe2f7"/><rect x="20" y="200" width="128" height="10" rx="5" fill="#dfe2f7"/>
@@ -40,7 +40,7 @@
 
     <rect x="205" y="0" width="185" height="345" rx="18" fill="#eff9f5" stroke="#68c49b" stroke-width="1.8"/>
     <circle cx="229" cy="31" r="8" fill="#18a26b"/><text class="laneTitle" x="247" y="37">Delivery</text>
-    <text class="mini" x="225" y="74">purpose</text><text class="body" x="225" y="98">task • evidence • build</text>
+    <text class="mini" x="225" y="74">purpose</text><text class="body" x="225" y="98">task • build</text>
     <line x1="225" y1="119" x2="370" y2="119" stroke="#d6e9e1"/>
     <text class="mini" x="225" y="146">session / model context</text>
     <rect x="225" y="162" width="135" height="10" rx="5" fill="#b9dfcf"/><rect x="225" y="181" width="112" height="10" rx="5" fill="#d8eee5"/><rect x="225" y="200" width="125" height="10" rx="5" fill="#d8eee5"/>
@@ -49,7 +49,7 @@
 
     <rect x="410" y="0" width="185" height="345" rx="18" fill="#fff6eb" stroke="#e8ab63" stroke-width="1.8"/>
     <circle cx="434" cy="31" r="8" fill="#ed8b2c"/><text class="laneTitle" x="452" y="37">Review / Risk</text>
-    <text class="mini" x="430" y="74">purpose</text><text class="body" x="430" y="98">challenge • verify • stop</text>
+    <text class="mini" x="430" y="74">purpose</text><text class="body" x="430" y="98">challenge • verify</text>
     <line x1="430" y1="119" x2="575" y2="119" stroke="#eadfce"/>
     <text class="mini" x="430" y="146">independent context</text>
     <rect x="430" y="162" width="135" height="10" rx="5" fill="#e8cda9"/><rect x="430" y="181" width="113" height="10" rx="5" fill="#f2dfc5"/><rect x="430" y="200" width="126" height="10" rx="5" fill="#f2dfc5"/>
