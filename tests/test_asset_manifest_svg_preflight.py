@@ -13,6 +13,9 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "asset_manifest_svg_preflight.py"
+sys.path.insert(0, str(ROOT / "scripts"))
+
+from asset_manifest_svg_preflight import resolve_evidence_path  # noqa: E402
 
 SVG = '''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
 <title id="title">Fallback preview test</title><desc id="desc">Safe governed SVG.</desc>
@@ -66,6 +69,13 @@ class SvgPreflightTests(unittest.TestCase):
             capture_output=True,
         )
 
+    def test_relative_evidence_paths_are_anchored_to_repository_root(self) -> None:
+        relative = Path(".preflight/svg")
+        self.assertEqual(resolve_evidence_path(relative), ROOT / relative)
+        with tempfile.TemporaryDirectory() as directory:
+            absolute = Path(directory).resolve()
+            self.assertEqual(resolve_evidence_path(absolute), absolute)
+
     def test_refreshes_manifest_and_renders_fallback_preview_set(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -83,6 +93,7 @@ class SvgPreflightTests(unittest.TestCase):
             self.assertEqual(refreshed["sha256"], hashlib.sha256(svg.read_bytes()).hexdigest())
 
             payload = json.loads(report.read_text(encoding="utf-8"))
+            self.assertEqual(json.loads(completed.stdout), payload)
             self.assertTrue(payload["ok"])
             result = payload["results"][0]
             self.assertTrue(result["inspection_required"])
@@ -122,6 +133,7 @@ class SvgPreflightTests(unittest.TestCase):
             completed = self.run_preflight([first, second], output_dir, report)
             self.assertEqual(completed.returncode, 0, completed.stderr)
             payload = json.loads(report.read_text(encoding="utf-8"))
+            self.assertEqual(json.loads(completed.stdout), payload)
             paths = [item["path"] for result in payload["results"] for item in result["previews"]]
             self.assertEqual(len(paths), 6)
             self.assertEqual(len(set(paths)), 6)
