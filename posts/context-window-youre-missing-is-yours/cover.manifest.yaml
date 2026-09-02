@@ -1,6 +1,6 @@
 schema_version: 1
 profile: image
-asset_id: pwp.human-attention-context.cover-v1
+asset_id: pwp.human-attention-context.cover
 visual_id: pwp.human-attention-context.cover
 content_id: post:context-window-youre-missing-is-yours
 source_class: project_owned
@@ -13,9 +13,12 @@ role: explanatory_cover
 section_anchor: null
 sequence: 0
 step_key: persistent-working-set
-alt: Editorial illustration showing persistent project groups across a phone and desktop. The active Work context is expanded into separate Orchestrator/PM and Delivery/Execution lanes with their own session context and authorization boundaries.
-caption: A persistent working set can keep the project room visible across devices while different AI sessions remain separated by role, scope, and authority.
-semantic_description: The cover shows a finite set of named working contexts on a phone and desktop. One active project is expanded on the desktop into two bounded lanes: an Orchestrator/PM lane for broad objective, scope, blockers, and coordination; and a Delivery/Execution lane for a narrower implementation task and validation. Each lane shows its own session/model context and authorization boundary. The browser grouping is represented as a human-visible organization layer only; it does not itself enforce permissions or replace the system of record.
+alt: >-
+  Editorial illustration showing persistent project groups across a phone and desktop. The active Work context is expanded into separate Orchestrator/PM and Delivery/Execution lanes with their own session context and authorization boundaries.
+caption: >-
+  A persistent working set can keep the project room visible across devices while different AI sessions remain separated by role, scope, and authority.
+semantic_description: >-
+  The cover shows a finite set of named working contexts on a phone and desktop. One active project is expanded on the desktop into two bounded lanes: an Orchestrator/PM lane for broad objective, scope, blockers, and coordination; and a Delivery/Execution lane for a narrower implementation task and validation. Each lane shows its own session/model context and authorization boundary. The browser grouping is represented as a human-visible organization layer only; it does not itself enforce permissions or replace the system of record.
 claims:
   - The visual represents a personal operating model in which a small set of working contexts can remain visible across devices.
   - Within one active project, separate AI sessions can be organized into bounded lanes with different roles and authorization boundaries.
