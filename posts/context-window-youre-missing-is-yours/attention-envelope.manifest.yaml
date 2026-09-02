@@ -1,6 +1,6 @@
 schema_version: 1
 profile: image
-asset_id: pwp.human-attention-context.attention-envelope-v1
+asset_id: pwp.human-attention-context.attention-envelope
 visual_id: pwp.human-attention-context.attention-envelope
 content_id: post:context-window-youre-missing-is-yours
 source_class: project_owned
@@ -13,9 +13,12 @@ role: body_diagram
 section_anchor: null
 sequence: 1
 step_key: attention-envelope
-alt: Nested diagram showing the system of record and project context feeding an attention-context envelope that contains separate Orchestrator, Delivery, and Review lanes, followed by an attention checkpoint and the next human decision.
-caption: Attention context is an active envelope around a few bounded lanes. Durable project state stays outside the live sessions so the working set can be reconstructed when needed.
-semantic_description: The diagram separates durable truth from live attention. The system of record contains verified actions, approvals, evidence, and repository state. Project context contains scope, history, files, decisions, and parked branches. The attention context is a smaller active envelope containing distinct Orchestrator/PM, Delivery, and Review/Risk lanes. Each lane has its own session or model context, purpose, and authorization boundary. An attention checkpoint records enough state for re-entry before the human chooses which lane requires judgment. A recovery loop shows that lost live tabs or sessions should be reconstructed from durable project context rather than treated as authoritative state.
+alt: >-
+  Nested diagram showing the system of record and project context feeding an attention-context envelope that contains separate Orchestrator, Delivery, and Review lanes, followed by an attention checkpoint and the next human decision.
+caption: >-
+  Attention context is an active envelope around a few bounded lanes. Durable project state stays outside the live sessions so the working set can be reconstructed when needed.
+semantic_description: >-
+  The diagram separates durable truth from live attention. The system of record contains verified actions, approvals, evidence, and repository state. Project context contains scope, history, files, decisions, and parked branches. The attention context is a smaller active envelope containing distinct Orchestrator/PM, Delivery, and Review/Risk lanes. Each lane has its own session or model context, purpose, and authorization boundary. An attention checkpoint records enough state for re-entry before the human chooses which lane requires judgment. A recovery loop shows that lost live tabs or sessions should be reconstructed from durable project context rather than treated as authoritative state.
 claims:
   - The model separates system-of-record truth, durable project context, and a smaller live attention context.
   - Model or session contexts are represented as bounded lanes inside the active attention context rather than as a single global context.
