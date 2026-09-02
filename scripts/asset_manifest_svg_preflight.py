@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -62,12 +63,23 @@ def fallback_svg_bytes(svg: Path, font_family: str) -> bytes:
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
+def preview_root(svg: Path, output_dir: Path) -> Path:
+    """Return a collision-safe preview directory for one source SVG."""
+    try:
+        relative = svg.relative_to(ROOT)
+        return output_dir / relative.parent
+    except ValueError:
+        parent_key = hashlib.sha256(str(svg.parent).encode("utf-8")).hexdigest()[:12]
+        return output_dir / "external" / parent_key
+
+
 def render_previews(svg: Path, output_dir: Path, font_family: str) -> list[dict[str, object]]:
-    output_dir.mkdir(parents=True, exist_ok=True)
+    target_dir = preview_root(svg, output_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
     prepared = fallback_svg_bytes(svg, font_family)
     previews: list[dict[str, object]] = []
     for label, width in DEFAULT_WIDTHS:
-        output = output_dir / f"{svg.parent.name}-{svg.stem}-fallback-{label}.png"
+        output = target_dir / f"{svg.stem}-fallback-{label}.png"
         cairosvg.svg2png(bytestring=prepared, write_to=str(output), output_width=width)
         with Image.open(output) as image:
             image.load()
@@ -125,6 +137,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
     try:
         results = [preflight(svg, args.output_dir, args.font_family) for svg in args.svg]
+        preview_paths = [item["path"] for result in results for item in result["previews"]]
+        if len(preview_paths) != len(set(preview_paths)):
+            raise ValueError("preview path collision detected")
         report = {
             "ok": True,
             "schema_version": 1,
