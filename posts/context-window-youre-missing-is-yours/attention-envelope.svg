@@ -63,7 +63,7 @@
   <rect x="1215" y="230" width="300" height="190" rx="22" fill="#f5f1ff" stroke="#a282e6" stroke-width="2"/>
   <circle cx="1252" cy="270" r="14" fill="#8b5cf6"/><text x="1252" y="276" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#fff">4</text>
   <text class="boxTitle" x="1279" y="277">Attention checkpoint</text>
-  <text class="body" x="1245" y="317"><tspan x="1245">Objective • active lanes • unresolved</tspan><tspan x="1245" dy="24">decision • parked branches • pointer</tspan><tspan x="1245" dy="24">back to durable project state</tspan></text>
+  <text class="body" x="1245" y="317"><tspan x="1245">Objective • active lanes</tspan><tspan x="1245" dy="24">Unresolved decision • parked work</tspan><tspan x="1245" dy="24">Pointer to durable project state</tspan></text>
 
   <rect x="1215" y="485" width="300" height="190" rx="22" fill="#fff8ed" stroke="#e2a557" stroke-width="2"/>
   <circle cx="1252" cy="525" r="14" fill="#ed8b2c"/><text x="1252" y="531" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#fff">5</text>
