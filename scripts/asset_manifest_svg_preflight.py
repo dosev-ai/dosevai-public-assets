@@ -24,6 +24,11 @@ def manifest_for(svg: Path) -> Path:
     return svg.with_name(f"{svg.stem}.manifest.yaml")
 
 
+def resolve_evidence_path(path: Path) -> Path:
+    """Anchor relative preflight evidence paths to the repository root."""
+    return path if path.is_absolute() else ROOT / path
+
+
 def run_packager(svg: Path, manifest: Path) -> None:
     if not manifest.is_file():
         raise FileNotFoundError(f"adjacent manifest missing: {manifest}")
@@ -45,8 +50,8 @@ def run_packager(svg: Path, manifest: Path) -> None:
         "--asset",
         str(svg),
     ]
-    subprocess.run(generate, cwd=ROOT, check=True)
-    subprocess.run(validate, cwd=ROOT, check=True)
+    subprocess.run(generate, cwd=ROOT, check=True, capture_output=True, text=True)
+    subprocess.run(validate, cwd=ROOT, check=True, capture_output=True, text=True)
 
 
 def fallback_svg_bytes(svg: Path, font_family: str) -> bytes:
@@ -135,8 +140,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
+    output_dir = resolve_evidence_path(args.output_dir)
+    report_path = resolve_evidence_path(args.report)
     try:
-        results = [preflight(svg, args.output_dir, args.font_family) for svg in args.svg]
+        results = [preflight(svg, output_dir, args.font_family) for svg in args.svg]
         preview_paths = [item["path"] for result in results for item in result["previews"]]
         if len(preview_paths) != len(set(preview_paths)):
             raise ValueError("preview path collision detected")
@@ -146,8 +153,8 @@ def main(argv: list[str] | None = None) -> int:
             "results": results,
             "next_gate": "inspect every generated preview as one same-class sweep before external review",
         }
-        args.report.parent.mkdir(parents=True, exist_ok=True)
-        args.report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(json.dumps(report, sort_keys=True))
         return 0
     except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as exc:
