@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -18,6 +19,7 @@ PACKAGER = ROOT / "scripts" / "asset_manifest.py"
 SVG_NS = "http://www.w3.org/2000/svg"
 DEFAULT_FONT_FAMILY = "DejaVu Sans"
 DEFAULT_WIDTHS = (("full", 1600), ("card", 800), ("mobile", 480))
+FONT_FAMILY_DECLARATION = re.compile(r"^\s*font-family\s*:", re.I)
 
 
 def manifest_for(svg: Path) -> Path:
@@ -54,6 +56,19 @@ def run_packager(svg: Path, manifest: Path) -> None:
     subprocess.run(validate, cwd=ROOT, check=True, capture_output=True, text=True)
 
 
+def force_inline_fallback_font(node: ET.Element, font_family: str) -> None:
+    """Make the requested fallback win over class and inline important font rules."""
+    declarations = [
+        declaration.strip()
+        for declaration in node.attrib.get("style", "").split(";")
+        if declaration.strip() and not FONT_FAMILY_DECLARATION.match(declaration)
+    ]
+    escaped = font_family.replace("\\", "\\\\").replace('"', '\\"')
+    declarations.append(f'font-family: "{escaped}", sans-serif !important')
+    node.set("style", "; ".join(declarations))
+    node.attrib.pop("font-family", None)
+
+
 def fallback_svg_bytes(svg: Path, font_family: str) -> bytes:
     try:
         root = ET.fromstring(svg.read_text(encoding="utf-8"))
@@ -61,10 +76,15 @@ def fallback_svg_bytes(svg: Path, font_family: str) -> bytes:
         raise ValueError(f"cannot prepare fallback-font SVG: {exc}") from exc
     if root.tag != f"{{{SVG_NS}}}svg":
         raise ValueError("SVG namespace/root required")
-    style = ET.Element(f"{{{SVG_NS}}}style", {"id": "preflight-fallback-font"})
-    escaped = font_family.replace("\\", "\\\\").replace('"', '\\"')
-    style.text = f'text, tspan {{ font-family: "{escaped}", sans-serif !important; }}'
-    root.append(style)
+
+    text_node_count = 0
+    for node in root.iter():
+        if node.tag in {f"{{{SVG_NS}}}text", f"{{{SVG_NS}}}tspan"}:
+            force_inline_fallback_font(node, font_family)
+            text_node_count += 1
+    if text_node_count == 0:
+        raise ValueError("fallback-font preflight requires at least one SVG text or tspan node")
+
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
