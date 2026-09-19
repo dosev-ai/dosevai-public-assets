@@ -129,9 +129,11 @@ A legacy narration row may map deterministically as follows:
 - `slug` -> `content_id`;
 - `source_hash` -> `source_content_hash`;
 - `model`, `voice`, `disclosure` -> same semantic fields;
-- `generated_at` -> `production_date`;
+- `generated_at` -> `production_date` only through the deterministic date rule below;
 - `format: mp3` -> initial `codec/container` pair only when the validator proves the bytes are decodable MP3;
 - `duration_seconds` -> `duration_ms` only when the conversion is exact at millisecond precision.
+
+Legacy production-date normalization is fail-closed. An exact `YYYY-MM-DD` value is accepted unchanged. An RFC 3339 timestamp is accepted only when it carries an explicit `Z` or numeric UTC offset; normalize that instant to UTC and emit its UTC calendar date as `YYYY-MM-DD`. A timestamp with no timezone, an invalid calendar value, or any other ambiguous/non-standard representation is rejected rather than truncated or guessed.
 
 Legacy `url` is not accepted as provenance. Migration must regenerate the adjacent source-projection sidecar and verify it against the legacy `source_hash`. `source_repository`, `source_path`, `provider_profile`, `provider`, `provider_route`, `license`, `coverage_mode`, `instructions`, `assembly_plan_hash`, `rights_policy`, `safety_policy`, and the inputs needed to recompute `audio_identity` require explicit governed values when absent. Missing semantic authority fails closed rather than being reconstructed from disclosure text.
 
@@ -143,9 +145,34 @@ The `presentation_pptx` profile extends the core with:
 - `template_contract`: explicit template/brand contract identifier supplied by the producer;
 - `speaker_notes_policy`: bounded policy; initial public profile is `forbid`;
 - shared `source_format`, `render_inspected`, `render_evidence`, and `private_notes_removed` evidence fields;
-- optional `derived_pdf_asset_id` and `derived_pdf_sha256`, which must appear together and bind an explicitly governed PDF derivative.
+- optional `derived_pdf_manifest_path`, `derived_pdf_asset_id`, and `derived_pdf_sha256`; all three must be present together or all absent.
 
-Activation requires ZIP/OOXML package-integrity validation, exact slide count, rejection of macros/ActiveX/OLE/external relationships and other prohibited active content, enforcement of the speaker-notes policy, render/contact-sheet evidence, MIME/path/checksum binding, positive and malformed fixtures, repository audit coverage, changed-package CI, and exact-head independent review.
+#### Normative PPTX v1 package allowlist
+
+The initial public `presentation_pptx` profile is a static text/shapes/tables/raster-image deck. Validation is allowlist-based, not a best-effort blacklist.
+
+Allowed package part classes are limited to:
+
+- `[Content_Types].xml` and `_rels/.rels`;
+- optional `docProps/core.xml` and `docProps/app.xml`;
+- `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels`, and optional `ppt/presProps.xml`, `ppt/viewProps.xml`, and `ppt/tableStyles.xml`;
+- `ppt/slides/slideN.xml` plus its relationship part;
+- `ppt/slideLayouts/slideLayoutN.xml` plus its relationship part;
+- `ppt/slideMasters/slideMasterN.xml` plus its relationship part;
+- `ppt/theme/themeN.xml`;
+- `ppt/media/*` only for decoded PNG or JPEG image bytes whose extension/content type/signature agree.
+
+The main presentation content type must be the ordinary non-macro-enabled PPTX type. Every package relationship must use an explicitly allowed relationship class: office document, core properties, extended properties, slide, slide layout, slide master, theme, image, presentation properties, view properties, or table styles. Every relationship target must be internal, resolve inside the package to an allowed existing part, and use safe normalized package syntax. `TargetMode="External"`, absolute/network targets, parent traversal, backslashes, and unknown relationship types fail closed.
+
+Everything outside that allowlist is rejected in v1. In particular, validation must reject VBA/macro parts, ActiveX/control parts, OLE or embedded/package objects, external links, hyperlinks/actions, custom UI/XML, web extensions/task panes, embedded fonts, audio/video/media other than the allowed raster images, notes slides/notes masters, comments/comment authors/people metadata, and unknown non-XML package members. Slide XML must also reject hyperlink/action elements and embedded/control/media object elements rather than relying only on relationship checks. New legitimate PPTX capabilities require a reviewed profile change before the validator may accept them.
+
+The validator must count the actual `ppt/slides/slideN.xml` parts and require equality with `slide_count`; it must also enforce archive-entry, decompressed-size/compression-ratio, duplicate/case-collision, XML parsing, DTD/entity, private-identifier, and relationship-graph safeguards equivalent in intent to the repository's existing public OOXML workbook validation.
+
+#### Derived PDF referential integrity
+
+When a derived PDF is declared, `derived_pdf_manifest_path` must resolve inside the same repository audit inventory to exactly one currently supported `document_pdf` manifest. That manifest must validate successfully; its `asset_id` must equal `derived_pdf_asset_id`; its manifest `sha256` must equal `derived_pdf_sha256`; and the PDF asset resolved by that manifest must exist and its actual bytes must hash to the same SHA-256. A path outside the repository, an inactive/unsupported profile, an ambiguous/missing manifest, or any ID/hash/byte mismatch fails closed. The PPTX manifest never infers a PDF relationship from filenames or URLs.
+
+Activation requires ZIP/OOXML package-integrity validation, exact slide count, the normative package/relationship allowlist above, enforcement of the speaker-notes policy, render/contact-sheet evidence, MIME/path/checksum binding, derived-PDF referential integrity when declared, positive and malformed fixtures, repository audit coverage, changed-package CI, and exact-head independent review.
 
 The initial public profile must fail when speaker notes are present. A later policy that permits reviewed public notes requires a separately reviewed contract change; it must not be introduced as an implementation shortcut.
 
