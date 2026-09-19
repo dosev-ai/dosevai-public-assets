@@ -52,6 +52,16 @@ repository, require it to be an adjacent regular file inside the same package di
 source_content_hash = lowercase_hex(SHA256(source_projection_sidecar_bytes))
 ```
 
+The sidecar is itself public repository material. It may contain only a narration projection already
+approved for public exposure; it must never be used to move private, draft-only, embargoed, or otherwise
+non-public source text into this repository merely to make the hash recomputable. If the authoritative
+source is not yet public-safe, the public audio package remains unavailable and any source evidence stays
+in a separately governed private staging surface.
+
+The `source_projection_contract` is versioned semantic authority. Any change to projection rules that
+can change canonical output bytes requires a new contract identifier and migration/compatibility review;
+an implementation change may not silently reuse `dosevai-narration-v1`.
+
 A migration from the current dosevai.com narration manifest must regenerate this sidecar from the
 authoritative article body through the named projection contract and require the resulting digest to
 equal the legacy `source_hash`. A legacy `slug` + `source_hash` pair without a recomputable projection
