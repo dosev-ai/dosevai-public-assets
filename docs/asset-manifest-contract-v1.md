@@ -222,7 +222,9 @@ The command fails when any blocking finding exists. `--allow-status` defers a fi
 
 ## PDF owner-attestation boundary
 
-A PDF package is mechanically package-valid when its manifest schema is valid, the repository/path identity resolves to the exact adjacent PDF file, the declared MIME/extension are consistent, the SHA-256 matches the actual file bytes, and the required owner-attestation fields are present with valid scalar types.
+The **target owner-attested PDF envelope contract** requires a valid manifest schema, exact adjacent repository/path identity, declared MIME/extension consistency, SHA-256 matching the actual file bytes, and required owner-attestation fields with valid scalar types.
+
+The currently merged PDF implementation predates this corrected boundary and does not yet require `sha256` in every valid PDF manifest. That implementation difference is a known reconciliation residual tracked separately; until reconciled, repository validation must not be presented as full conformance with this target contract.
 
 The packager does **not** parse PDF structure, count pages, inspect encryption/actions/JavaScript/forms/annotations/attachments/embedded objects, render pages, or determine whether private notes/content were removed. `page_count`, `render_inspected`, `render_evidence`, `private_notes_removed`, `embedded_object_policy`, and `annotation_policy` are owner-supplied evidence. The owner/reviewer is responsible for the substantive document review and for deciding whether the document is public-safe and publication-ready.
 
