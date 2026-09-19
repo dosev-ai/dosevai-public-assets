@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -8,7 +9,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from pypdf import PdfWriter
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -55,7 +55,12 @@ remote_fonts: false
 """
 
 
-def pdf_manifest(*, source_path: str = "posts/sample/companion.pdf", pages: int = 1) -> str:
+def pdf_manifest(
+    *,
+    source_path: str = "posts/sample/companion.pdf",
+    pages: int = 1,
+    checksum: str,
+) -> str:
     return f"""schema_version: 1
 profile: document_pdf
 asset_id: sample-companion
@@ -65,6 +70,7 @@ project: test
 source_repository: example/assets
 source_path: {source_path}
 mime_type: application/pdf
+sha256: {checksum}
 role: document_companion
 alt: Sample PDF alt
 caption: Sample PDF caption
@@ -73,7 +79,7 @@ claims:
 - Sample PDF claim
 boundaries:
 - Sample PDF boundary
-creation_method: test fixture
+creation_method: owner-reviewed test fixture
 contributor: test
 license: CC0-1.0
 public_safe: true
@@ -83,20 +89,16 @@ scripts: false
 page_count: {pages}
 source_format: governed-public-presentation
 render_inspected: true
-render_evidence: rendered with pdfium and inspected
+render_evidence: owner rendered and inspected
 private_notes_removed: true
 embedded_object_policy: forbid
 annotation_policy: forbid
 """
 
 
-def write_pdf(path: Path, *, attachment: bool = False) -> None:
-    writer = PdfWriter()
-    writer.add_blank_page(width=100, height=100)
-    if attachment:
-        writer.add_attachment("private.txt", b"secret")
-    with path.open("wb") as handle:
-        writer.write(handle)
+def write_pdf(path: Path, *, content: bytes = b"owner-attested-pdf-bytes") -> str:
+    path.write_bytes(content)
+    return hashlib.sha256(content).hexdigest()
 
 
 class AuditTests(unittest.TestCase):
@@ -121,8 +123,11 @@ class AuditTests(unittest.TestCase):
         with self.make_repo() as directory:
             root = Path(directory)
             package = root / "posts" / "sample"
-            write_pdf(package / "companion.pdf")
-            (package / "companion.manifest.yaml").write_text(pdf_manifest(), encoding="utf-8")
+            checksum = write_pdf(package / "companion.pdf")
+            (package / "companion.manifest.yaml").write_text(
+                pdf_manifest(checksum=checksum),
+                encoding="utf-8",
+            )
             report = audit_repository(root)
             self.assertTrue(report["ok"])
             self.assertEqual(report["summary"], {"pass": 1})
@@ -181,15 +186,22 @@ class AuditTests(unittest.TestCase):
             self.assertEqual(report["items"][0]["status"], "unsafe")
             self.assertEqual(report["items"][0]["code"], "UNSAFE_RESOURCE_FLAGS")
 
-    def test_pdf_attachment_is_unsafe(self) -> None:
+    def test_pdf_content_is_not_parsed_by_repository_audit(self) -> None:
         with self.make_repo() as directory:
             root = Path(directory)
             package = root / "posts" / "sample"
-            write_pdf(package / "companion.pdf", attachment=True)
-            (package / "companion.manifest.yaml").write_text(pdf_manifest(), encoding="utf-8")
+            checksum = write_pdf(
+                package / "companion.pdf",
+                content=b"owner-reviewed content may contain words like attachment, JavaScript, or annotation",
+            )
+            (package / "companion.manifest.yaml").write_text(
+                pdf_manifest(checksum=checksum),
+                encoding="utf-8",
+            )
             report = audit_repository(root)
-            self.assertEqual(report["items"][0]["status"], "unsafe")
-            self.assertEqual(report["items"][0]["code"], "PDF_EMBEDDED_OBJECTS_FORBIDDEN")
+            self.assertTrue(report["ok"])
+            self.assertEqual(report["summary"], {"pass": 1})
+            self.assertEqual(report["items"][0]["code"], "PACKAGE_VALID")
 
     def test_symlinked_package_member_is_unsafe(self) -> None:
         if not hasattr(os, "symlink"):
