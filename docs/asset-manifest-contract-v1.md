@@ -23,18 +23,94 @@ The `audio` profile extends the core with:
 - `duration_ms`: positive integer measured from decoded audio;
 - `codec`: normalized codec identifier; initial implementation may support only `mp3`;
 - `container`: normalized container identifier; initial implementation may support only `mp3`;
-- `source_content_hash`: lowercase 64-character SHA-256 of the exact governed source projection used for generation;
+- `source_projection_contract`: stable identifier for the algorithm that derives narratable source text, initially `dosevai-narration-v1`;
+- `source_projection_path`: repository-relative path to an adjacent audit sidecar containing the exact canonical narration projection used for generation;
+- `source_content_hash`: lowercase 64-character SHA-256 recomputed from the exact sidecar bytes;
 - `coverage_mode`: bounded enum describing what is voiced, initially `prose_only` or `full_text`;
+- `provider_profile`: stable governed provider-profile identifier/version;
 - `provider`: explicit provider identity;
+- `provider_route`: explicit provider route identity;
 - `model`: explicit model identity;
 - `voice`: explicit voice identity;
-- `audio_identity`: content-addressed identity for the governed generation inputs;
+- `instructions`: explicit generation instructions; empty string means none;
+- `assembly_plan_hash`: `sha256:<lowercase-hex>` of the canonical chunk/assembly plan;
+- `rights_policy`: stable rights-policy identifier/version;
+- `safety_policy`: stable safety-policy identifier/version;
+- `audio_identity`: deterministic content-addressed identity defined below;
 - `disclosure`: public provenance/coverage disclosure shown with the asset;
 - `production_date`: ISO `YYYY-MM-DD` production date.
 
-Activation requires real-byte decoding, measured duration, MIME/path/checksum binding, source-content-hash binding, explicit coverage/provenance fields, positive and malformed fixtures, repository audit coverage, changed-package CI, and exact-head independent review.
+#### Recomputable source binding
 
-The packager must not infer provider, licence, disclosure, coverage mode, or `audio_identity` from model names, filenames, prose, or URLs.
+For `dosevai-narration-v1`, the source-projection sidecar bytes are exactly
+`UTF8(canonicalNarrationProjection(body).text)`: UTF-8, no BOM, no added trailing newline, and no
+additional normalization after the projection function has applied its own deterministic markdown,
+whitespace, and typography rules. The package audit must read `source_projection_path` from the
+repository, require it to be an adjacent regular file inside the same package directory, and require:
+
+```text
+source_content_hash = lowercase_hex(SHA256(source_projection_sidecar_bytes))
+```
+
+A migration from the current dosevai.com narration manifest must regenerate this sidecar from the
+authoritative article body through the named projection contract and require the resulting digest to
+equal the legacy `source_hash`. A legacy `slug` + `source_hash` pair without a recomputable projection
+is therefore not sufficient for profile activation. The consumer may additionally recompute the same
+projection from the current article body at render/read time and fail closed on drift, matching the
+existing dosevai.com narration behavior.
+
+This source binding certifies the exact declared generation source. It does not claim that deterministic
+asset validation can independently prove spoken-word equivalence between arbitrary audio and text.
+
+#### Deterministic audio identity
+
+`audio_identity` is:
+
+```text
+"sha256:" + lowercase_hex(
+  SHA256(
+    UTF8(
+      JSON.stringify([
+        "audio-identity-v1",
+        content_id,
+        source_content_hash,
+        source_projection_contract,
+        provider_profile,
+        provider,
+        provider_route,
+        model,
+        voice,
+        normalized_instructions,
+        assembly_plan_hash,
+        codec,
+        container,
+        rights_policy,
+        safety_policy
+      ])
+    )
+  )
+)
+```
+
+The array order above is normative. JSON serialization is compact JSON with standard JSON escaping,
+no extra spaces, no BOM, and no trailing newline. Every identifier/value is a Unicode string normalized
+to NFC before serialization. `normalized_instructions` is the NFC-normalized `instructions` value
+with leading/trailing whitespace removed and internal characters otherwise preserved; absence is the
+empty string. No locale-aware case folding is applied. `assembly_plan_hash` is itself a
+`sha256:<lowercase-hex>` digest of the implementation's separately canonicalized chunk/assembly plan.
+
+Changing any listed material input must change `audio_identity`. Values not listed above, such as a
+request ID or cost ceiling, are request/execution metadata and do not define the produced audio's
+content identity.
+
+Activation requires real-byte decoding, measured duration, MIME/path/checksum binding, a recomputable
+source-content binding, deterministic audio-identity recomputation, explicit coverage/provenance fields,
+positive and malformed fixtures, repository audit coverage, changed-package CI, and exact-head
+independent review.
+
+The packager must not infer provider, provider route/profile, licence, disclosure, coverage mode,
+instructions, assembly plan, rights/safety policy, or `audio_identity` from model names, filenames,
+prose, or URLs.
 
 #### Legacy narration mapping
 
@@ -47,7 +123,7 @@ A legacy narration row may map deterministically as follows:
 - `format: mp3` -> initial `codec/container` pair only when the validator proves the bytes are decodable MP3;
 - `duration_seconds` -> `duration_ms` only when the conversion is exact at millisecond precision.
 
-Legacy `url` is not accepted as provenance. `source_repository`, `source_path`, `provider`, `license`, `coverage_mode`, and `audio_identity` require explicit governed inputs when absent. Missing semantic authority fails closed rather than being reconstructed from disclosure text.
+Legacy `url` is not accepted as provenance. Migration must regenerate the adjacent source-projection sidecar and verify it against the legacy `source_hash`. `source_repository`, `source_path`, `provider_profile`, `provider`, `provider_route`, `license`, `coverage_mode`, `instructions`, `assembly_plan_hash`, `rights_policy`, `safety_policy`, and the inputs needed to recompute `audio_identity` require explicit governed values when absent. Missing semantic authority fails closed rather than being reconstructed from disclosure text.
 
 ### Presentation PPTX profile
 
