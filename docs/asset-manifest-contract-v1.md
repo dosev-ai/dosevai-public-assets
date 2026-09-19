@@ -8,9 +8,11 @@ This repository uses one deterministic packager entry point for asset manifests.
 
 The image profile retains `visual_id` as a compatibility field and requires it to equal `asset_id`. It also requires `remote_fonts: false`.
 
-Document-like profiles may reuse the existing evidence fields `source_format`, `render_inspected`, `render_evidence`, and `private_notes_removed` without changing their names or scalar types. Reuse does not activate an inactive profile; the repository validator remains authoritative for the supported-profile set.
+Document-like profiles are **owner-attested metadata envelopes**, not machine-certified documents. The packager may reuse the existing evidence fields `source_format`, `render_inspected`, `render_evidence`, and `private_notes_removed`, but those values are explicit owner attestations. The packager must not open, parse, render, inspect, or certify PDF/PPTX internals in order to prove them.
 
-The PDF profile adds `page_count`, `embedded_object_policy`, and `annotation_policy`, and requires the shared document evidence fields above. Optional lifecycle fields include `subtitle`, `filename_policy`, and `update_policy`.
+For document profiles the machine-owned boundary is limited to package identity and integrity: manifest schema, exact repository/path adjacency, declared profile/MIME/extension consistency, SHA-256 of the file bytes, deterministic serialization, and presence/type of required owner-supplied fields. Semantic correctness, page/slide review, notes, active/embedded content, accessibility, visual fidelity, private-content removal, and publication suitability remain the owner's responsibility.
+
+The PDF profile retains `page_count`, `embedded_object_policy`, and `annotation_policy` as owner-supplied attestations and uses the shared document evidence fields above. Optional lifecycle fields include `subtitle`, `filename_policy`, and `update_policy`. The existing repository PDF parser is a transitional implementation residual, not authority for owner approval; it must be reconciled separately before claiming full contract parity.
 
 ## Designed inactive profiles
 
@@ -139,44 +141,22 @@ Legacy `url` is not accepted as provenance. Migration must regenerate the adjace
 
 ### Presentation PPTX profile
 
-The `presentation_pptx` profile extends the core with:
+The `presentation_pptx` profile extends the core with owner-supplied evidence:
 
-- `slide_count`: positive integer measured from the OOXML package;
-- `template_contract`: explicit template/brand contract identifier supplied by the producer;
-- `speaker_notes_policy`: bounded policy; initial public profile is `forbid`;
-- shared `source_format`, `render_inspected`, `render_evidence`, and `private_notes_removed` evidence fields;
+- `slide_count`: positive integer attested by the owner;
+- `template_contract`: explicit template/brand contract identifier supplied by the owner/producer;
+- `speaker_notes_policy`: explicit owner decision, e.g. `forbid`, `reviewed_public`, or another separately governed value;
+- shared `source_format`, `render_inspected`, `render_evidence`, and `private_notes_removed` owner-attestation fields;
 - optional `derived_pdf_manifest_path`, `derived_pdf_asset_id`, and `derived_pdf_sha256`; all three must be present together or all absent.
 
-#### Normative PPTX v1 package allowlist
+The packager does **not** unzip or parse OOXML, count slides, inspect notes, macros, ActiveX/OLE, relationships, embedded objects, fonts, comments, hyperlinks, media, or other presentation internals. Those checks belong to the owner/reviewer using the appropriate PowerPoint/document workflow before the manifest is approved.
 
-The initial public `presentation_pptx` profile is a static text/shapes/tables/raster-image deck. Validation is allowlist-based, not a best-effort blacklist.
+When a derived PDF is declared, the packager may verify only package-level referential integrity: `derived_pdf_manifest_path` resolves to exactly one repository package, its manifest declares `profile: document_pdf`, its `asset_id` equals `derived_pdf_asset_id`, and its declared/actual file SHA-256 equals `derived_pdf_sha256`. This is identity linkage only; it does not parse or certify the PDF.
 
-Allowed package part classes are limited to:
-
-- `[Content_Types].xml` and `_rels/.rels`;
-- optional `docProps/core.xml` and `docProps/app.xml`;
-- `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels`, and optional `ppt/presProps.xml`, `ppt/viewProps.xml`, and `ppt/tableStyles.xml`;
-- `ppt/slides/slideN.xml` plus its relationship part;
-- `ppt/slideLayouts/slideLayoutN.xml` plus its relationship part;
-- `ppt/slideMasters/slideMasterN.xml` plus its relationship part;
-- `ppt/theme/themeN.xml`;
-- `ppt/media/*` only for decoded PNG or JPEG image bytes whose extension/content type/signature agree.
-
-The main presentation content type must be the ordinary non-macro-enabled PPTX type. Every package relationship must use an explicitly allowed relationship class: office document, core properties, extended properties, slide, slide layout, slide master, theme, image, presentation properties, view properties, or table styles. Every relationship target must be internal, resolve inside the package to an allowed existing part, and use safe normalized package syntax. `TargetMode="External"`, absolute/network targets, parent traversal, backslashes, and unknown relationship types fail closed.
-
-Everything outside that allowlist is rejected in v1. In particular, validation must reject VBA/macro parts, ActiveX/control parts, OLE or embedded/package objects, external links, hyperlinks/actions, custom UI/XML, web extensions/task panes, embedded fonts, audio/video/media other than the allowed raster images, notes slides/notes masters, comments/comment authors/people metadata, and unknown non-XML package members. Slide XML must also reject hyperlink/action elements and embedded/control/media object elements rather than relying only on relationship checks. New legitimate PPTX capabilities require a reviewed profile change before the validator may accept them.
-
-The validator must count the actual `ppt/slides/slideN.xml` parts and require equality with `slide_count`; it must also enforce archive-entry, decompressed-size/compression-ratio, duplicate/case-collision, XML parsing, DTD/entity, private-identifier, and relationship-graph safeguards equivalent in intent to the repository's existing public OOXML workbook validation.
-
-#### Derived PDF referential integrity
-
-When a derived PDF is declared, `derived_pdf_manifest_path` must resolve inside the same repository audit inventory to exactly one currently supported `document_pdf` manifest. That manifest must validate successfully; its `asset_id` must equal `derived_pdf_asset_id`; its manifest `sha256` must equal `derived_pdf_sha256`; and the PDF asset resolved by that manifest must exist and its actual bytes must hash to the same SHA-256. A path outside the repository, an inactive/unsupported profile, an ambiguous/missing manifest, or any ID/hash/byte mismatch fails closed. The PPTX manifest never infers a PDF relationship from filenames or URLs.
-
-Activation requires ZIP/OOXML package-integrity validation, exact slide count, the normative package/relationship allowlist above, enforcement of the speaker-notes policy, render/contact-sheet evidence, MIME/path/checksum binding, derived-PDF referential integrity when declared, positive and malformed fixtures, repository audit coverage, changed-package CI, and exact-head independent review.
-
-The initial public profile must fail when speaker notes are present. A later policy that permits reviewed public notes requires a separately reviewed contract change; it must not be introduced as an implementation shortcut.
+Activation requires schema support, deterministic manifest generation/inspection, exact file identity/checksum binding, required owner attestations, package-level positive/negative metadata tests, changed-package CI, and exact-head independent review. It does **not** require malformed-PPTX fixtures or a PPTX structural validator.
 
 A private source PPTX used only to produce a public PDF is not automatically a public `presentation_pptx` package. Do not import, expose, or normalize a private source deck merely because a derived PDF is public.
+
 
 ## Commands
 
@@ -189,7 +169,7 @@ python scripts/asset_manifest.py normalize legacy.manifest.yaml \
   --license CC0-1.0 \
   --asset figure.svg
 
-# Normalize a legacy PDF manifest. Safety and render evidence are explicit.
+# Normalize a legacy PDF manifest. Safety/render values are explicit owner attestations.
 python scripts/asset_manifest.py normalize legacy-pdf.manifest.yaml \
   --profile document_pdf \
   --output companion.manifest.yaml \
@@ -226,31 +206,25 @@ python scripts/asset_manifest.py audit \
 python scripts/asset_manifest.py audit --root . --format text --allow-findings
 ```
 
-`validate`, `normalize`, and `generate` require the real asset bytes. `inspect` is metadata-only and does not certify a package.
+`validate`, `normalize`, and `generate` require the real asset bytes for identity/checksum binding. `inspect` is metadata-only. For document profiles, none of these commands constitutes substantive document review or owner approval.
 
 `audit` discovers assets and adjacent manifests under `posts/`, `social/`, `diagrams`, and `shared` by default. It validates actual bytes, full repository-relative source paths, optional expected repository identity, SHA-256 evidence, symlink safety, and deterministic package pairing. Results use these classifications: `pass`, `repair`, `missing_manifest`, `orphan_manifest`, `unsupported_profile`, or `unsafe`.
 
 The command fails when any blocking finding exists. `--allow-status` defers a finding only when its repository-relative manifest is also named by a repeated `--allow-manifest`. Unlisted findings remain blocking, and stale allowlist entries also fail the gate. `--allow-findings` is a non-certifying exploratory mode and must not be used as the steady-state required check after migration.
 
-## PDF certification
+## PDF owner-attestation boundary
 
-A PDF package passes only when all of the following are true:
+A PDF package is mechanically package-valid when its manifest schema is valid, the repository/path identity resolves to the exact adjacent PDF file, the declared MIME/extension are consistent, the SHA-256 matches the actual file bytes, and the required owner-attestation fields are present with valid scalar types.
 
-- the file has a PDF signature and EOF marker and parses structurally in strict mode;
-- the actual page count equals the manifest page count;
-- the document is not encrypted;
-- catalog and page actions, JavaScript, AcroForms, annotations, attachments, associated files, and embedded files are absent;
-- render inspection and private-note removal are explicitly asserted;
-- embedded-object and annotation policies are both `forbid`;
-- MIME, source path, repository identity, and checksum match the actual file.
+The packager does **not** parse PDF structure, count pages, inspect encryption/actions/JavaScript/forms/annotations/attachments/embedded objects, render pages, or determine whether private notes/content were removed. `page_count`, `render_inspected`, `render_evidence`, `private_notes_removed`, `embedded_object_policy`, and `annotation_policy` are owner-supplied evidence. The owner/reviewer is responsible for the substantive document review and for deciding whether the document is public-safe and publication-ready.
 
-Render inspection is an evidence gate separate from structural parsing. The packager records the evidence statement but does not fabricate or infer it.
+Repository package validation must never be described as document certification or owner approval.
 
 ## Profile activation and schema evolution
 
 - `schema_version: 1` remains the active schema until an implementation PR changes executable validation.
 - The executable supported-profile set remains authoritative. Design text alone never makes `audio` or `presentation_pptx` valid.
-- New profile keys must not appear in production manifests before their validator and fixtures merge; unknown fields continue to fail closed.
+- New profile keys must not appear in production manifests before their package-level schema support and fixtures merge; unknown fields continue to fail closed.
 - A profile may extend the core but may not rename or retype a common field.
 - Existing names/types reused by another profile retain the same semantics.
 - Incompatible field semantics or scalar types require a new schema version and an explicit migration path.
@@ -258,7 +232,7 @@ Render inspection is an evidence gate separate from structural parsing. The pack
 
 ## Ownership boundary
 
-Producer skills create the asset and supply explicit semantic metadata. The packager owns field mapping, serialization, checksums, structural validation, repository-wide discovery, and normalized output. Publishing skills and application code consume the normalized result and must not reproduce the core field list independently.
+Producer/owner workflows create and substantively review the asset and supply explicit semantic metadata and attestations. The packager owns field mapping, serialization, checksums, package identity, repository-wide discovery, and normalized output. For PDF/PPTX it does not own document parsing, content inspection, visual approval, or publication suitability. Publishing skills and application code consume the normalized result and must not reproduce the core field list independently.
 
 ## Legacy licence boundary
 
