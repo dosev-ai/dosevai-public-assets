@@ -44,9 +44,16 @@ The `audio` profile extends the core with:
 
 #### Recomputable source binding
 
+`dosevai-narration-v1` is normatively bound to `canonicalNarrationProjection` in
+`deldos/dosevai-com@8161f49c5f4a50ce1043f0fcb319d813c4fd01d0:src/lib/content/narration.ts`.
+That exact commit/path/function defines the markdown selection, structural exclusions, whitespace handling,
+inline-markup handling, word bounds, and typography normalization for this contract. A later implementation
+change does not alter `dosevai-narration-v1`; changing projection semantics requires a new
+`source_projection_contract` identifier and reviewed compatibility/migration decision.
+
 For `dosevai-narration-v1`, the source-projection sidecar bytes are exactly
 `UTF8(canonicalNarrationProjection(body).text)`: UTF-8, no BOM, no added trailing newline, and no
-additional normalization after the projection function has applied its own deterministic markdown,
+additional normalization after that versioned projection function has applied its deterministic markdown,
 whitespace, and typography rules. The package audit must read `source_projection_path` from the
 repository, require it to be an adjacent regular file inside the same package directory, and require:
 
@@ -87,6 +94,7 @@ asset validation can independently prove spoken-word equivalence between arbitra
         content_id,
         source_content_hash,
         source_projection_contract,
+        coverage_mode,
         provider_profile,
         provider,
         provider_route,
@@ -111,9 +119,9 @@ with leading/trailing whitespace removed and internal characters otherwise prese
 empty string. No locale-aware case folding is applied. `assembly_plan_hash` is itself a
 `sha256:<lowercase-hex>` digest of the implementation's separately canonicalized chunk/assembly plan.
 
-Changing any listed material input must change `audio_identity`. Values not listed above, such as a
-request ID or cost ceiling, are request/execution metadata and do not define the produced audio's
-content identity.
+Changing any listed material input, including `coverage_mode`, must change `audio_identity`.
+Values not listed above, such as a request ID or cost ceiling, are request/execution metadata and do not
+define the produced audio's content identity.
 
 Activation requires real-byte decoding, measured duration, MIME/path/checksum binding, a recomputable
 source-content binding, deterministic audio-identity recomputation, explicit coverage/provenance fields,
