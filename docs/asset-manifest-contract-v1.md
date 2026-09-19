@@ -12,7 +12,7 @@ Document-like profiles are **owner-attested metadata envelopes**, not machine-ce
 
 For document profiles the machine-owned boundary is limited to package identity and integrity: manifest schema, exact repository/path adjacency, declared profile/MIME/extension consistency, SHA-256 of the file bytes, deterministic serialization, and presence/type of required owner-supplied fields. Semantic correctness, page/slide review, notes, active/embedded content, accessibility, visual fidelity, private-content removal, and publication suitability remain the owner's responsibility.
 
-The PDF profile retains `page_count`, `embedded_object_policy`, and `annotation_policy` as owner-supplied attestations and uses the shared document evidence fields above. Optional lifecycle fields include `subtitle`, `filename_policy`, and `update_policy`. The existing repository PDF parser is a transitional implementation residual, not authority for owner approval; it must be reconciled separately before claiming full contract parity.
+The PDF profile retains `page_count`, `embedded_object_policy`, and `annotation_policy` as owner-supplied attestations and uses the shared document evidence fields above. Optional lifecycle fields include `subtitle`, `filename_policy`, and `update_policy`. The repository validator must not parse PDF contents as part of package acceptance.
 
 ## Designed inactive profiles
 
@@ -222,9 +222,7 @@ The command fails when any blocking finding exists. `--allow-status` defers a fi
 
 ## PDF owner-attestation boundary
 
-The **target owner-attested PDF envelope contract** requires a valid manifest schema, exact adjacent repository/path identity, declared MIME/extension consistency, SHA-256 matching the actual file bytes, and required owner-attestation fields with valid scalar types.
-
-The currently merged PDF implementation predates this corrected boundary and does not yet require `sha256` in every valid PDF manifest. That implementation difference is a known reconciliation residual tracked separately; until reconciled, repository validation must not be presented as full conformance with this target contract.
+The active owner-attested PDF envelope contract requires a valid manifest schema, exact adjacent repository/path identity, declared MIME/extension consistency, SHA-256 matching the actual file bytes, and required owner-attestation fields with valid scalar types.
 
 The packager does **not** parse PDF structure, count pages, inspect encryption/actions/JavaScript/forms/annotations/attachments/embedded objects, render pages, or determine whether private notes/content were removed. `page_count`, `render_inspected`, `render_evidence`, `private_notes_removed`, `embedded_object_policy`, and `annotation_policy` are owner-supplied evidence. The owner/reviewer is responsible for the substantive document review and for deciding whether the document is public-safe and publication-ready.
 
