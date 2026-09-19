@@ -223,7 +223,7 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
     if data["profile"] not in SUPPORTED_PROFILES:
         fail("UNSUPPORTED_PROFILE", data["profile"])
     if data["profile"] == "image":
-        pdf_only = set(PDF_REQUIRED) | {"filename_policy", "update_policy"}
+        pdf_only = (set(PDF_REQUIRED) - {"sha256"}) | {"filename_policy", "update_policy"}
         if any(key in data for key in pdf_only):
             fail("IMAGE_PDF_FIELDS_FORBIDDEN", ", ".join(sorted(pdf_only & set(data))))
         if data.get("visual_id") != data["asset_id"]:
