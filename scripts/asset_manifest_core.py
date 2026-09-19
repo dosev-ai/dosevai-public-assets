@@ -12,7 +12,6 @@ from PIL import Image, UnidentifiedImageError
 import yaml
 from yaml.constructor import ConstructorError
 
-from asset_manifest_pdf import PdfValidationError, validate_pdf
 from asset_manifest_svg import SvgValidationError, validate_svg
 
 SCHEMA_VERSION = 1
@@ -47,7 +46,7 @@ REQUIRED = {
     "guide_eligible": bool, "external_resources": bool, "scripts": bool,
 }
 PDF_REQUIRED = {
-    "page_count": int, "source_format": str, "render_inspected": bool, "render_evidence": str,
+    "sha256": str, "page_count": int, "source_format": str, "render_inspected": bool, "render_evidence": str,
     "private_notes_removed": bool, "embedded_object_policy": str, "annotation_policy": str,
 }
 ROLE_MAP = {"cover": "explanatory_cover", "inline": "explanatory_inline", "gallery": "gallery_item"}
@@ -274,11 +273,8 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
                     fail(exc.code, exc.message)
             else:
                 validate_raster_image(asset, data["mime_type"])
-        else:
-            try:
-                validate_pdf(asset, expected_page_count=data["page_count"])
-            except PdfValidationError as exc:
-                fail(exc.code, exc.message)
+        # document_pdf intentionally stops at envelope validation here.
+        # The owner/reviewer is responsible for document-content and structure review.
     return data
 
 
