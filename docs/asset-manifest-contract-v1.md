@@ -97,14 +97,25 @@ asset validation can independently prove spoken-word equivalence between arbitra
 
 #### Canonical provider instructions
 
-Before provider dispatch, the producer must normalize the instruction string once by applying Unicode NFC
-and removing leading/trailing whitespace while otherwise preserving internal characters. That normalized
-string is both:
+Before provider dispatch, the producer must canonicalize the instruction string through
+`audio-instructions-v1`:
+
+1. normalize the complete input string to Unicode NFC;
+2. remove the maximal leading run and maximal trailing run containing **only** these code points:
+   U+0009 TAB, U+000A LF, U+000B VT, U+000C FF, U+000D CR, and U+0020 SPACE;
+3. preserve every other code point and all internal characters exactly.
+
+No other Unicode whitespace, separator, BOM, or format character is trimmed in v1. In particular,
+U+0085, U+00A0, U+2000-U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, and U+FEFF are preserved when
+they occur at the boundaries. Implementations must apply this code-point rule directly rather than
+delegating to a language-default `trim`/`strip` function whose whitespace set may differ.
+
+The resulting canonical string is both:
 
 1. the exact `instructions` value stored in the manifest; and
 2. the exact string dispatched to the provider.
 
-The governed path must not dispatch an unnormalized raw variant while hashing or storing a normalized
+The governed path must not dispatch a non-canonical raw variant while hashing or storing the canonical
 variant. If provider-visible instructions differ, the manifest value and generation identity must differ.
 
 #### Deterministic audio generation identity
