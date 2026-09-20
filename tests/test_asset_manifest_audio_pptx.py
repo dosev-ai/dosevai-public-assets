@@ -172,6 +172,14 @@ class AudioPptxManifestTests(unittest.TestCase):
         self.assertEqual(validate_manifest(data)["instructions"], "\u00a0Read clearly.\u00a0")
 
     def test_audio_legacy_mapping_is_map_or_reject(self) -> None:
+        _, root = self.workspace()
+        asset = root / "posts" / "sample" / "legacy.mp3"
+        asset.write_bytes(TINY_MP3)
+        mapping_args = {
+            "source_path": "posts/sample/legacy.mp3",
+            "mime_type": "audio/mpeg",
+            "asset": asset,
+        }
         mapped = map_audio_legacy(
             {
                 "slug": "post:sample",
@@ -183,30 +191,32 @@ class AudioPptxManifestTests(unittest.TestCase):
                 "duration_seconds": "0.120",
                 "generated_at": "2026-09-20T00:30:00+02:00",
                 "disclosure": "AI narration",
-            }
+            },
+            **mapping_args,
         )
         self.assertEqual(mapped["content_id"], "post:sample")
+        self.assertEqual(mapped["sha256"], hashlib.sha256(TINY_MP3).hexdigest())
         self.assertEqual(mapped["duration_ms"], 120)
         self.assertEqual(mapped["production_date"], "2026-09-19")
         with self.assertRaises(ManifestError):
-            map_audio_legacy({**{
+            map_audio_legacy({
                 "slug": "post:sample", "source_hash": "b" * 64, "model": "x", "voice": "x",
                 "format": "wav", "duration_seconds": 1, "generated_at": "2026-09-20",
                 "disclosure": "x",
-            }})
+            }, **mapping_args)
         with self.assertRaises(ManifestError) as ambiguous_time:
             map_audio_legacy({
                 "slug": "post:sample", "source_hash": "b" * 64, "model": "x", "voice": "x",
                 "format": "mp3", "duration_seconds": 1, "generated_at": "2026-09-20T10:00:00",
                 "disclosure": "x",
-            })
+            }, **mapping_args)
         self.assertEqual(ambiguous_time.exception.code, "AUDIO_LEGACY_GENERATED_AT_INVALID")
         with self.assertRaises(ManifestError) as nonfinite:
             map_audio_legacy({
                 "slug": "post:sample", "source_hash": "b" * 64, "model": "x", "voice": "x",
                 "format": "mp3", "duration_seconds": "NaN", "generated_at": "2026-09-20",
                 "disclosure": "x",
-            })
+            }, **mapping_args)
         self.assertEqual(nonfinite.exception.code, "AUDIO_LEGACY_DURATION_INVALID")
 
     def test_audio_repository_audit_binds_public_source_sidecar(self) -> None:
