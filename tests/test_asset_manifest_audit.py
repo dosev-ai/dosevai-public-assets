@@ -166,12 +166,12 @@ class AuditTests(unittest.TestCase):
             self.assertFalse(report["ok"])
             self.assertEqual(report["summary"], {"missing_manifest": 1, "orphan_manifest": 1})
 
-    def test_inactive_pptx_is_not_called_orphan(self) -> None:
+    def test_unsupported_audio_extension_is_not_called_orphan(self) -> None:
         with self.make_repo() as directory:
             root = Path(directory)
             package = root / "posts" / "sample"
-            (package / "companion.pptx").write_bytes(b"not a presentation")
-            (package / "companion.manifest.yaml").write_text("profile: presentation_pptx\n", encoding="utf-8")
+            (package / "companion.wav").write_bytes(b"not an active audio envelope")
+            (package / "companion.manifest.yaml").write_text("profile: audio\n", encoding="utf-8")
             report = audit_repository(root)
             self.assertEqual(report["summary"], {"unsupported_profile": 1})
             self.assertEqual(report["items"][0]["code"], "UNSUPPORTED_ASSET_FORMAT")
@@ -224,7 +224,7 @@ class AuditTests(unittest.TestCase):
             root = Path(directory)
             package = root / "posts" / "sample"
             (package / "cover.svg").write_text(VALID_SVG, encoding="utf-8")
-            (package / "cover.manifest.yaml").write_text(image_manifest(profile="audio"), encoding="utf-8")
+            (package / "cover.manifest.yaml").write_text(image_manifest(profile="future_video"), encoding="utf-8")
             report = audit_repository(root)
             self.assertEqual(report["items"][0]["status"], "unsupported_profile")
             self.assertEqual(report["items"][0]["code"], "UNSUPPORTED_PROFILE")
@@ -262,8 +262,8 @@ class AuditTests(unittest.TestCase):
         with self.make_repo() as directory:
             root = Path(directory)
             package = root / "posts" / "sample"
-            (package / "companion.pptx").write_bytes(b"not a presentation")
-            (package / "companion.manifest.yaml").write_text("profile: presentation_pptx\n", encoding="utf-8")
+            (package / "companion.wav").write_bytes(b"not an active audio envelope")
+            (package / "companion.manifest.yaml").write_text("profile: audio\n", encoding="utf-8")
             command = [
                 sys.executable, str(SCRIPTS / "asset_manifest.py"), "audit",
                 "--root", str(root),
