@@ -262,7 +262,7 @@ def compute_audio_generation_identity(data: dict[str, Any]) -> str:
 
 
 def _validate_iso_date(value: str, code: str) -> None:
-    if not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", value):
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         fail(code, value)
     try:
         dt.date.fromisoformat(value)
@@ -331,7 +331,7 @@ def _validate_pptx_contract(data: dict[str, Any]) -> None:
 def _legacy_audio_production_date(value: Any) -> str:
     if not isinstance(value, str):
         fail("AUDIO_LEGACY_GENERATED_AT_INVALID", repr(value))
-    if re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", value):
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         _validate_iso_date(value, "AUDIO_LEGACY_GENERATED_AT_INVALID")
         return value
     candidate = value[:-1] + "+00:00" if value.endswith("Z") else value
