@@ -286,7 +286,10 @@ def _validate_audio_contract(data: dict[str, Any]) -> None:
     if data["source_projection_contract"] != "dosevai-narration-v1":
         fail("AUDIO_SOURCE_PROJECTION_UNSUPPORTED", data["source_projection_contract"])
     projection_path = safe_path(data["source_projection_path"])
-    if PurePosixPath(projection_path).parent != PurePosixPath(safe_path(data["source_path"])).parent:
+    source_path = safe_path(data["source_path"])
+    if projection_path == source_path:
+        fail("AUDIO_SOURCE_PROJECTION_INVALID", "source projection must be a distinct adjacent file")
+    if PurePosixPath(projection_path).parent != PurePosixPath(source_path).parent:
         fail("AUDIO_SOURCE_PROJECTION_NOT_ADJACENT", projection_path)
     if not re.fullmatch(r"[0-9a-f]{64}", data["source_content_hash"]):
         fail("AUDIO_SOURCE_HASH_INVALID", data["source_content_hash"])
