@@ -22,9 +22,9 @@ The definitions below are design contracts only. They are not accepted package s
 
 The `audio` profile extends the core with:
 
-- `duration_ms`: positive integer measured from decoded audio;
-- `codec`: normalized codec identifier; initial implementation may support only `mp3`;
-- `container`: normalized container identifier; initial implementation may support only `mp3`;
+- `duration_ms`: positive integer producer-supplied observation of the produced asset; v1 validates type/range but does not independently recompute duration;
+- `codec`: exactly `mp3` in v1;
+- `container`: exactly `mp3` in v1;
 - `source_projection_contract`: stable identifier for the algorithm that derives narratable source text, initially `dosevai-narration-v1`;
 - `source_projection_path`: repository-relative path to an adjacent audit sidecar containing the exact canonical narration projection used for generation;
 - `source_content_hash`: lowercase 64-character SHA-256 recomputed from the exact sidecar bytes;
@@ -34,13 +34,27 @@ The `audio` profile extends the core with:
 - `provider_route`: explicit provider route identity;
 - `model`: explicit model identity;
 - `voice`: explicit voice identity;
-- `instructions`: explicit generation instructions; empty string means none;
-- `assembly_plan_hash`: `sha256:<lowercase-hex>` of the canonical chunk/assembly plan;
+- `instructions`: the exact canonical instruction string dispatched to the provider; empty string means none;
+- `assembly_plan_hash`: producer-supplied `sha256:<lowercase-hex>` evidence for the generation/chunk assembly plan;
 - `rights_policy`: stable rights-policy identifier/version;
 - `safety_policy`: stable safety-policy identifier/version;
-- `audio_identity`: deterministic content-addressed identity defined below;
+- `audio_generation_identity`: deterministic generation-recipe identity defined below;
 - `disclosure`: public provenance/coverage disclosure shown with the asset;
 - `production_date`: ISO `YYYY-MM-DD` production date.
+
+The common manifest `sha256` is the actual audio **content identity**: it must equal the SHA-256 of the exact output bytes. `audio_generation_identity` identifies the governed generation recipe and must never be described as a content-addressed identity.
+
+#### Initial MP3 envelope
+
+The initial audio profile has one accepted byte envelope:
+
+- source path extension: `.mp3`;
+- `mime_type: audio/mpeg`;
+- `codec: mp3`;
+- `container: mp3`;
+- common manifest `sha256`: mandatory lowercase SHA-256 of the exact MP3 bytes.
+
+Aliases such as `audio/mp3`, alternate extensions, or another codec/container pair are unsupported until a reviewed profile change explicitly adds them. An active validator must prove that the exact bytes are decodable MP3; it does not infer the envelope from a filename alone.
 
 #### Recomputable source binding
 
@@ -81,16 +95,39 @@ existing dosevai.com narration behavior.
 This source binding certifies the exact declared generation source. It does not claim that deterministic
 asset validation can independently prove spoken-word equivalence between arbitrary audio and text.
 
-#### Deterministic audio identity
+#### Canonical provider instructions
 
-`audio_identity` is:
+Before provider dispatch, the producer must canonicalize the instruction string through
+`audio-instructions-v1`:
+
+1. normalize the complete input string to Unicode NFC;
+2. remove the maximal leading run and maximal trailing run containing **only** these code points:
+   U+0009 TAB, U+000A LF, U+000B VT, U+000C FF, U+000D CR, and U+0020 SPACE;
+3. preserve every other code point and all internal characters exactly.
+
+No other Unicode whitespace, separator, BOM, or format character is trimmed in v1. In particular,
+U+0085, U+00A0, U+2000-U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, and U+FEFF are preserved when
+they occur at the boundaries. Implementations must apply this code-point rule directly rather than
+delegating to a language-default `trim`/`strip` function whose whitespace set may differ.
+
+The resulting canonical string is both:
+
+1. the exact `instructions` value stored in the manifest; and
+2. the exact string dispatched to the provider.
+
+The governed path must not dispatch a non-canonical raw variant while hashing or storing the canonical
+variant. If provider-visible instructions differ, the manifest value and generation identity must differ.
+
+#### Deterministic audio generation identity
+
+`audio_generation_identity` is:
 
 ```text
 "sha256:" + lowercase_hex(
   SHA256(
     UTF8(
       JSON.stringify([
-        "audio-identity-v1",
+        "audio-generation-identity-v1",
         content_id,
         source_content_hash,
         source_projection_contract,
@@ -100,7 +137,7 @@ asset validation can independently prove spoken-word equivalence between arbitra
         provider_route,
         model,
         voice,
-        normalized_instructions,
+        instructions,
         assembly_plan_hash,
         codec,
         container,
@@ -114,23 +151,32 @@ asset validation can independently prove spoken-word equivalence between arbitra
 
 The array order above is normative. JSON serialization is compact JSON with standard JSON escaping,
 no extra spaces, no BOM, and no trailing newline. Every identifier/value is a Unicode string normalized
-to NFC before serialization. `normalized_instructions` is the NFC-normalized `instructions` value
-with leading/trailing whitespace removed and internal characters otherwise preserved; absence is the
-empty string. No locale-aware case folding is applied. `assembly_plan_hash` is itself a
-`sha256:<lowercase-hex>` digest of the implementation's separately canonicalized chunk/assembly plan.
+to NFC before serialization. No locale-aware case folding is applied.
 
-Changing any listed material input, including `coverage_mode`, must change `audio_identity`.
-Values not listed above, such as a request ID or cost ceiling, are request/execution metadata and do not
-define the produced audio's content identity.
+Changing any listed material generation input must change `audio_generation_identity`. The output bytes
+do not participate in this recipe identity; the common manifest `sha256` is the separate exact content
+identity and distinguishes nondeterministic provider/encoder outputs produced from the same recipe.
 
-Activation requires real-byte decoding, measured duration, MIME/path/checksum binding, a recomputable
-source-content binding, deterministic audio-identity recomputation, explicit coverage/provenance fields,
-positive and malformed fixtures, repository audit coverage, changed-package CI, and exact-head
-independent review.
+`assembly_plan_hash` is explicit producer evidence. In v1 the packager validates only that it has the
+required `sha256:<lowercase-hex>` shape; it does not claim to reconstruct or certify the producer's
+private chunk/assembly representation. A future profile that needs independent assembly-plan verification
+must introduce a reviewed versioned canonicalization contract rather than silently changing v1 semantics.
+
+`duration_ms` is likewise producer evidence in v1. The packager validates it as a positive integer but
+does not independently recompute duration because decoder delay/padding and VBR timing rules are not part
+of this contract. A future profile may add a versioned duration-measurement rule; until then, byte identity
+comes from `sha256`, not from duration equality.
+
+Activation requires decodable MP3 bytes, the exact v1 extension/MIME/codec/container mapping, exact
+byte-level `sha256`, a recomputable source-content binding, deterministic
+`audio_generation_identity` recomputation from declared fields, explicit coverage/provenance fields,
+positive and malformed-byte fixtures, repository audit coverage, changed-package CI, and exact-head
+independent review. Activation does **not** require the packager to independently derive `duration_ms`
+or reconstruct the private assembly plan.
 
 The packager must not infer provider, provider route/profile, licence, disclosure, coverage mode,
-instructions, assembly plan, rights/safety policy, or `audio_identity` from model names, filenames,
-prose, or URLs.
+instructions, assembly plan, rights/safety policy, or `audio_generation_identity` from model names,
+filenames, prose, or URLs.
 
 #### Legacy narration mapping
 
@@ -140,16 +186,26 @@ A legacy narration row may map deterministically as follows:
 - `source_hash` -> `source_content_hash`;
 - `model`, `voice`, `disclosure` -> same semantic fields;
 - `generated_at` -> `production_date` only through the deterministic date rule below;
-- `format: mp3` -> initial `codec/container` pair only when the validator proves the bytes are decodable MP3;
-- `duration_seconds` -> `duration_ms` only when the conversion is exact at millisecond precision.
+- `format: mp3` -> `codec: mp3` and `container: mp3` only when the asset path ends in `.mp3`, `mime_type` is `audio/mpeg`, and the validator proves the exact bytes are decodable MP3;
+- `duration_seconds` -> `duration_ms` only when the conversion is exact at millisecond precision; the mapped value remains producer evidence rather than an independently recomputed validator result.
 
-Legacy production-date normalization is fail-closed. An exact `YYYY-MM-DD` value is accepted unchanged. An RFC 3339 timestamp is accepted only when it carries an explicit `Z` or numeric UTC offset; normalize that instant to UTC and emit its UTC calendar date as `YYYY-MM-DD`. A timestamp with no timezone, an invalid calendar value, or any other ambiguous/non-standard representation is rejected rather than truncated or guessed.
+Legacy production-date normalization is fail-closed. An exact `YYYY-MM-DD` value is accepted unchanged.
+An RFC 3339 timestamp is accepted only when it carries an explicit `Z` or numeric UTC offset; normalize
+that instant to UTC and emit its UTC calendar date as `YYYY-MM-DD`. A timestamp with no timezone, an
+invalid calendar value, or any other ambiguous/non-standard representation is rejected rather than
+truncated or guessed.
 
-Legacy `url` is not accepted as provenance. Migration must regenerate the adjacent source-projection sidecar and verify it against the legacy `source_hash`. `source_repository`, `source_path`, `provider_profile`, `provider`, `provider_route`, `license`, `coverage_mode`, `instructions`, `assembly_plan_hash`, `rights_policy`, `safety_policy`, and the inputs needed to recompute `audio_identity` require explicit governed values when absent. Missing semantic authority fails closed rather than being reconstructed from disclosure text.
+Legacy `url` is not accepted as provenance. Migration must regenerate the adjacent source-projection
+sidecar and verify it against the legacy `source_hash`. `source_repository`, `source_path`,
+`provider_profile`, `provider`, `provider_route`, `license`, `coverage_mode`, canonical
+provider-dispatched `instructions`, `assembly_plan_hash`, `rights_policy`, `safety_policy`, and the
+inputs needed to recompute `audio_generation_identity` require explicit governed values when absent.
+Missing semantic authority fails closed rather than being reconstructed from disclosure text.
 
 ### Presentation PPTX profile
 
-The `presentation_pptx` profile extends the core with owner-supplied evidence:
+The `presentation_pptx` profile extends the core with owner-supplied evidence. Its package envelope requires the `.pptx` extension and `application/vnd.openxmlformats-officedocument.presentationml.presentation` MIME type; other extensions or MIME aliases are unsupported unless a reviewed profile change adds them.
+
 
 - `slide_count`: positive integer attested by the owner;
 - `template_contract`: explicit template/brand contract identifier supplied by the owner/producer;
