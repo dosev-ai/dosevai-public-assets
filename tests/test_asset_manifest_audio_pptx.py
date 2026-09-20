@@ -215,6 +215,20 @@ class AudioPptxManifestTests(unittest.TestCase):
                 "format": "wav", "duration_seconds": 1, "generated_at": "2026-09-20",
                 "disclosure": "x",
             }})
+        with self.assertRaises(ManifestError) as ambiguous_time:
+            map_audio_legacy({
+                "slug": "post:sample", "source_hash": "b" * 64, "model": "x", "voice": "x",
+                "format": "mp3", "duration_seconds": 1, "generated_at": "2026-09-20T10:00:00",
+                "disclosure": "x",
+            })
+        self.assertEqual(ambiguous_time.exception.code, "AUDIO_LEGACY_GENERATED_AT_INVALID")
+        with self.assertRaises(ManifestError) as nonfinite:
+            map_audio_legacy({
+                "slug": "post:sample", "source_hash": "b" * 64, "model": "x", "voice": "x",
+                "format": "mp3", "duration_seconds": "NaN", "generated_at": "2026-09-20",
+                "disclosure": "x",
+            })
+        self.assertEqual(nonfinite.exception.code, "AUDIO_LEGACY_DURATION_INVALID")
 
     def test_audio_repository_audit_binds_public_source_sidecar(self) -> None:
         _, root = self.workspace()
@@ -235,6 +249,14 @@ class AudioPptxManifestTests(unittest.TestCase):
         self.assertFalse(report["ok"])
         audio_item = next(item for item in report["items"] if item.get("profile") == "audio")
         self.assertEqual(audio_item["code"], "AUDIO_SOURCE_HASH_MISMATCH")
+
+        sidecar.write_text("changed\n", encoding="utf-8")
+        data["source_content_hash"] = hashlib.sha256(sidecar.read_bytes()).hexdigest()
+        data["audio_generation_identity"] = compute_audio_generation_identity(data)
+        (package / "narration.manifest.yaml").write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+        report = audit_repository(root)
+        audio_item = next(item for item in report["items"] if item.get("profile") == "audio")
+        self.assertEqual(audio_item["code"], "AUDIO_SOURCE_PROJECTION_TRAILING_NEWLINE")
 
     def test_pptx_is_owner_attested_envelope_only(self) -> None:
         _, root = self.workspace()
