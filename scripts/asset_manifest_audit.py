@@ -78,6 +78,7 @@ def _item(
     if manifest:
         for key in (
             "asset_id", "content_id", "profile", "role", "source_path", "mime_type", "sha256", "page_count",
+            "duration_ms", "slide_count",
         ):
             if key in manifest:
                 result[key] = manifest[key]
@@ -112,6 +113,79 @@ def _unsupported_adjacent_assets(manifest_path: Path, stem: str) -> list[Path]:
         and path.stem == stem
         and not path.name.endswith(MANIFEST_SUFFIX)
     )
+
+
+def _repository_file(root: Path, relative_path: str, code: str) -> Path:
+    raw = root / relative_path
+    if raw.is_symlink():
+        raise ManifestError(code, f"symlink forbidden: {relative_path}")
+    resolved = raw.resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ManifestError(code, f"path escapes repository: {relative_path}") from exc
+    if not resolved.is_file():
+        raise ManifestError(code, f"file not found: {relative_path}")
+    return resolved
+
+
+def _validate_audio_source_binding(root: Path, manifest: dict[str, Any]) -> None:
+    sidecar = _repository_file(
+        root,
+        manifest["source_projection_path"],
+        "AUDIO_SOURCE_PROJECTION_FILE_INVALID",
+    )
+    actual = sha256(sidecar)
+    if actual != manifest["source_content_hash"]:
+        raise ManifestError(
+            "AUDIO_SOURCE_HASH_MISMATCH",
+            f"{manifest['source_content_hash']} != {actual}",
+        )
+
+
+def _validate_pptx_derived_pdf(
+    root: Path,
+    manifest: dict[str, Any],
+    expected_repository: str | None,
+) -> None:
+    reference = manifest.get("derived_pdf_manifest_path")
+    if reference is None:
+        return
+    pdf_manifest_path = _repository_file(root, reference, "PPTX_DERIVED_PDF_MANIFEST_INVALID")
+    pdf_manifest = load_mapping(pdf_manifest_path)
+    if pdf_manifest.get("profile") != "document_pdf":
+        raise ManifestError("PPTX_DERIVED_PDF_PROFILE_INVALID", str(pdf_manifest.get("profile")))
+    if pdf_manifest.get("asset_id") != manifest["derived_pdf_asset_id"]:
+        raise ManifestError(
+            "PPTX_DERIVED_PDF_ASSET_ID_MISMATCH",
+            f"{pdf_manifest.get('asset_id')} != {manifest['derived_pdf_asset_id']}",
+        )
+    if pdf_manifest.get("sha256") != manifest["derived_pdf_sha256"]:
+        raise ManifestError(
+            "PPTX_DERIVED_PDF_SHA256_MISMATCH",
+            f"{pdf_manifest.get('sha256')} != {manifest['derived_pdf_sha256']}",
+        )
+    source_path = pdf_manifest.get("source_path")
+    if not isinstance(source_path, str):
+        raise ManifestError("PPTX_DERIVED_PDF_SOURCE_INVALID", repr(source_path))
+    pdf_asset = _repository_file(root, source_path, "PPTX_DERIVED_PDF_ASSET_INVALID")
+    expected_manifest = pdf_asset.with_name(f"{pdf_asset.stem}{MANIFEST_SUFFIX}").resolve()
+    if pdf_manifest_path != expected_manifest:
+        raise ManifestError(
+            "PPTX_DERIVED_PDF_MANIFEST_NOT_ADJACENT",
+            f"{reference} != {_relative(expected_manifest, root)}",
+        )
+    validated_pdf = validate_manifest(pdf_manifest, pdf_asset)
+    if expected_repository and validated_pdf["source_repository"] != expected_repository:
+        raise ManifestError(
+            "SOURCE_REPOSITORY_MISMATCH",
+            f"{validated_pdf['source_repository']} != {expected_repository}",
+        )
+    if validated_pdf["source_path"] != _relative(pdf_asset, root):
+        raise ManifestError(
+            "ASSET_SOURCE_PATH_MISMATCH",
+            f"{validated_pdf['source_path']} != {_relative(pdf_asset, root)}",
+        )
 
 
 def audit_repository(
@@ -213,6 +287,10 @@ def audit_repository(
                     "ASSET_SOURCE_PATH_MISMATCH",
                     f"{validated['source_path']} != {actual_source_path}",
                 )
+            if validated["profile"] == "audio":
+                _validate_audio_source_binding(root, validated)
+            elif validated["profile"] == "presentation_pptx":
+                _validate_pptx_derived_pdf(root, validated, expected_repository)
         except ManifestError as exc:
             items.append(
                 _item(
