@@ -135,6 +135,17 @@ def _validate_audio_source_binding(root: Path, manifest: dict[str, Any]) -> None
         manifest["source_projection_path"],
         "AUDIO_SOURCE_PROJECTION_FILE_INVALID",
     )
+    raw = sidecar.read_bytes()
+    if raw.startswith(b"\xef\xbb\xbf"):
+        raise ManifestError("AUDIO_SOURCE_PROJECTION_BOM_FORBIDDEN", manifest["source_projection_path"])
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ManifestError("AUDIO_SOURCE_PROJECTION_UTF8_REQUIRED", str(exc)) from exc
+    if not text:
+        raise ManifestError("AUDIO_SOURCE_PROJECTION_EMPTY", manifest["source_projection_path"])
+    if raw.endswith((b"\n", b"\r")):
+        raise ManifestError("AUDIO_SOURCE_PROJECTION_TRAILING_NEWLINE", manifest["source_projection_path"])
     actual = sha256(sidecar)
     if actual != manifest["source_content_hash"]:
         raise ManifestError(
