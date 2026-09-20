@@ -1,6 +1,6 @@
 # Governed asset manifest contract v1
 
-This repository uses one deterministic packager entry point for asset manifests. The active profiles are `image` and `document_pdf`. The designed but inactive profiles are `audio` and `presentation_pptx`; they must extend the same normalized core instead of creating independent generators.
+This repository uses one deterministic packager entry point for asset manifests. The executable profile registry supports `image`, `document_pdf`, `audio`, and `presentation_pptx`; every profile extends the same normalized core instead of creating an independent generator.
 
 ## Core fields
 
@@ -14,9 +14,9 @@ For document profiles the machine-owned boundary is limited to package identity 
 
 The PDF profile retains `page_count`, `embedded_object_policy`, and `annotation_policy` as owner-supplied attestations and uses the shared document evidence fields above. Optional lifecycle fields include `subtitle`, `filename_policy`, and `update_policy`. The repository validator must not parse PDF contents as part of package acceptance.
 
-## Designed inactive profiles
+## Typed profiles
 
-The definitions below are design contracts only. They are not accepted package shapes until the repository-local validator, fixtures, changed-package CI, and exact-head independent review activate them.
+The definitions below are executable profile contracts. `audio` adds bounded byte/source validation appropriate to generated audio. `presentation_pptx` remains an owner-attested document envelope: profile support does not authorize OOXML parsing or document certification.
 
 ### Audio profile
 
@@ -66,9 +66,10 @@ change does not alter `dosevai-narration-v1`; changing projection semantics requ
 `source_projection_contract` identifier and reviewed compatibility/migration decision.
 
 For `dosevai-narration-v1`, the source-projection sidecar bytes are exactly
-`UTF8(canonicalNarrationProjection(body).text)`: UTF-8, no BOM, no added trailing newline, and no
-additional normalization after that versioned projection function has applied its deterministic markdown,
-whitespace, and typography rules. The package audit must read `source_projection_path` from the
+`UTF8(canonicalNarrationProjection(body).text)`: UTF-8, no BOM, and no LF or CR bytes anywhere.
+The pinned projection collapses every whitespace run to U+0020 SPACE before returning `text`; the
+packager must not add any further normalization after that versioned projection function has applied its
+deterministic markdown, whitespace, and typography rules. The package audit must read `source_projection_path` from the
 repository, require it to be an adjacent regular file inside the same package directory, and require:
 
 ```text
@@ -167,7 +168,7 @@ does not independently recompute duration because decoder delay/padding and VBR 
 of this contract. A future profile may add a versioned duration-measurement rule; until then, byte identity
 comes from `sha256`, not from duration equality.
 
-Activation requires decodable MP3 bytes, the exact v1 extension/MIME/codec/container mapping, exact
+Active audio-package validation requires decodable MP3 bytes, the exact v1 extension/MIME/codec/container mapping, exact
 byte-level `sha256`, a recomputable source-content binding, deterministic
 `audio_generation_identity` recomputation from declared fields, explicit coverage/provenance fields,
 positive and malformed-byte fixtures, repository audit coverage, changed-package CI, and exact-head
@@ -209,7 +210,7 @@ The `presentation_pptx` profile extends the core with owner-supplied evidence. I
 
 - `slide_count`: positive integer attested by the owner;
 - `template_contract`: explicit template/brand contract identifier supplied by the owner/producer;
-- `speaker_notes_policy`: explicit owner decision, e.g. `forbid`, `reviewed_public`, or another separately governed value;
+- `speaker_notes_policy`: explicit owner decision; v1 accepts only `forbid` or `reviewed_public`;
 - shared `source_format`, `render_inspected`, `render_evidence`, and `private_notes_removed` owner-attestation fields;
 - optional `derived_pdf_manifest_path`, `derived_pdf_asset_id`, and `derived_pdf_sha256`; all three must be present together or all absent.
 
@@ -217,7 +218,7 @@ The packager does **not** unzip or parse OOXML, count slides, inspect notes, mac
 
 When a derived PDF is declared, the packager may verify only package-level referential integrity: `derived_pdf_manifest_path` resolves to exactly one repository package, its manifest declares `profile: document_pdf`, its `asset_id` equals `derived_pdf_asset_id`, and its declared/actual file SHA-256 equals `derived_pdf_sha256`. This is identity linkage only; it does not parse or certify the PDF.
 
-Activation requires schema support, deterministic manifest generation/inspection, exact file identity/checksum binding, required owner attestations, package-level positive/negative metadata tests, changed-package CI, and exact-head independent review. It does **not** require malformed-PPTX fixtures or a PPTX structural validator.
+Active PPTX-package validation requires schema support, deterministic manifest generation/inspection, exact file identity/checksum binding, required owner attestations, package-level positive/negative metadata tests, changed-package CI, and exact-head independent review. It does **not** require malformed-PPTX structural fixtures or a PPTX structural validator.
 
 A private source PPTX used only to produce a public PDF is not automatically a public `presentation_pptx` package. Do not import, expose, or normalize a private source deck merely because a derived PDF is public.
 
@@ -287,7 +288,7 @@ Repository package validation must never be described as document certification 
 ## Profile activation and schema evolution
 
 - `schema_version: 1` remains the active schema until an implementation PR changes executable validation.
-- The executable supported-profile set remains authoritative. Design text alone never makes `audio` or `presentation_pptx` valid.
+- The executable supported-profile set remains authoritative; this contract describes the currently supported `image`, `document_pdf`, `audio`, and `presentation_pptx` profiles.
 - New profile keys must not appear in production manifests before their package-level schema support and fixtures merge; unknown fields continue to fail closed.
 - A profile may extend the core but may not rename or retype a common field.
 - Existing names/types reused by another profile retain the same semantics.
@@ -300,4 +301,4 @@ Producer/owner workflows create and substantively review the asset and supply ex
 
 ## Legacy licence boundary
 
-Legacy prose `rights` cannot be translated automatically into a machine-readable license. Image normalization requires an explicit `--license`; omission fails with `LEGACY_LICENSE_MAPPING_REQUIRED`. PDF normalization may preserve an existing machine-readable licence or accept an explicit override, but it may not infer one from prose. The same rule applies to future audio and PPTX normalization.
+Legacy prose `rights` cannot be translated automatically into a machine-readable license. Image normalization requires an explicit `--license`; omission fails with `LEGACY_LICENSE_MAPPING_REQUIRED`. PDF normalization may preserve an existing machine-readable licence or accept an explicit override, but it may not infer one from prose. Audio/PPTX producer adapters must likewise supply explicit machine-readable licence authority; the generic CLI does not infer it from legacy prose.
