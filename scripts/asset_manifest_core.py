@@ -337,6 +337,8 @@ def _legacy_audio_production_date(value: Any) -> str:
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         _validate_iso_date(value, "AUDIO_LEGACY_GENERATED_AT_INVALID")
         return value
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", value):
+        fail("AUDIO_LEGACY_GENERATED_AT_INVALID", value)
     candidate = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
         parsed = dt.datetime.fromisoformat(candidate)
@@ -365,7 +367,7 @@ def map_audio_legacy(legacy: dict[str, Any]) -> dict[str, Any]:
         millis = Decimal(str(seconds)) * Decimal(1000)
     except InvalidOperation:
         fail("AUDIO_LEGACY_DURATION_INVALID", repr(seconds))
-    if millis <= 0 or millis != millis.to_integral_value():
+    if not millis.is_finite() or millis <= 0 or millis != millis.to_integral_value():
         fail("AUDIO_LEGACY_DURATION_INVALID", repr(seconds))
     return {
         "content_id": legacy["slug"],
