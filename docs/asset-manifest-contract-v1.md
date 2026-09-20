@@ -66,9 +66,10 @@ change does not alter `dosevai-narration-v1`; changing projection semantics requ
 `source_projection_contract` identifier and reviewed compatibility/migration decision.
 
 For `dosevai-narration-v1`, the source-projection sidecar bytes are exactly
-`UTF8(canonicalNarrationProjection(body).text)`: UTF-8, no BOM, no added trailing newline, and no
-additional normalization after that versioned projection function has applied its deterministic markdown,
-whitespace, and typography rules. The package audit must read `source_projection_path` from the
+`UTF8(canonicalNarrationProjection(body).text)`: UTF-8, no BOM, and no LF or CR bytes anywhere.
+The pinned projection collapses every whitespace run to U+0020 SPACE before returning `text`; the
+packager must not add any further normalization after that versioned projection function has applied its
+deterministic markdown, whitespace, and typography rules. The package audit must read `source_projection_path` from the
 repository, require it to be an adjacent regular file inside the same package directory, and require:
 
 ```text
