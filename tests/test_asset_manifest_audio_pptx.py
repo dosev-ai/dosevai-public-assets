@@ -251,7 +251,6 @@ class AudioPptxManifestTests(unittest.TestCase):
         package = root / "posts" / "sample"
         pptx_bytes = b"owner-attested-pptx"
         pdf_bytes = b"owner-attested-pdf"
-        (package / "deck.pptx").write_bytes(pptx_bytes)
         (package / "deck.pdf").write_bytes(pdf_bytes)
         pdf = pdf_manifest(hashlib.sha256(pdf_bytes).hexdigest())
         (package / "deck.manifest.yaml").write_text(yaml.safe_dump(pdf, sort_keys=False), encoding="utf-8")
