@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import datetime as dt
+from decimal import Decimal, InvalidOperation
 import hashlib
+import json
 import mimetypes
 import re
+import unicodedata
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -12,10 +15,11 @@ from PIL import Image, UnidentifiedImageError
 import yaml
 from yaml.constructor import ConstructorError
 
+from asset_manifest_audio import AudioValidationError, validate_mp3_audio
 from asset_manifest_svg import SvgValidationError, validate_svg
 
 SCHEMA_VERSION = 1
-SUPPORTED_PROFILES = {"image", "document_pdf"}
+SUPPORTED_PROFILES = {"image", "document_pdf", "audio", "presentation_pptx"}
 SAFE_LEGACY_STATES = {"approved-for-publication", "approved-for-review", "reviewed-public-safe", "public-safe"}
 
 ORDERED_KEYS = [
@@ -25,6 +29,11 @@ ORDERED_KEYS = [
     "audience", "creation_method", "contributor", "license", "public_safe", "guide_eligible",
     "external_resources", "scripts", "remote_fonts", "page_count", "source_format", "render_inspected",
     "render_evidence", "private_notes_removed", "embedded_object_policy", "annotation_policy",
+    "duration_ms", "codec", "container", "source_projection_contract", "source_projection_path",
+    "source_content_hash", "coverage_mode", "provider_profile", "provider", "provider_route", "model",
+    "voice", "instructions", "assembly_plan_hash", "rights_policy", "safety_policy",
+    "audio_generation_identity", "disclosure", "production_date", "slide_count", "template_contract",
+    "speaker_notes_policy", "derived_pdf_manifest_path", "derived_pdf_asset_id", "derived_pdf_sha256",
     "filename_policy", "update_policy", "created_at",
 ]
 ALLOWED_KEYS = set(ORDERED_KEYS)
@@ -38,6 +47,9 @@ PDF_LEGACY_KEYS = {
     "license", "filename_policy", "update_policy", "alt_text", "caption", "semantic_description", "claims",
     "boundaries", "creation_method", "public_safety_state",
 }
+AUDIO_LEGACY_KEYS = {
+    "slug", "source_hash", "url", "model", "voice", "format", "duration_seconds", "generated_at", "disclosure",
+}
 REQUIRED = {
     "schema_version": int, "profile": str, "asset_id": str, "content_id": str, "source_class": str,
     "project": str, "source_repository": str, "source_path": str, "mime_type": str, "role": str,
@@ -49,10 +61,30 @@ PDF_REQUIRED = {
     "sha256": str, "page_count": int, "source_format": str, "render_inspected": bool, "render_evidence": str,
     "private_notes_removed": bool, "embedded_object_policy": str, "annotation_policy": str,
 }
+AUDIO_REQUIRED = {
+    "sha256": str, "duration_ms": int, "codec": str, "container": str, "source_projection_contract": str,
+    "source_projection_path": str, "source_content_hash": str, "coverage_mode": str, "provider_profile": str,
+    "provider": str, "provider_route": str, "model": str, "voice": str, "assembly_plan_hash": str,
+    "rights_policy": str, "safety_policy": str, "audio_generation_identity": str, "disclosure": str,
+    "production_date": str,
+}
+PPTX_REQUIRED = {
+    "sha256": str, "slide_count": int, "template_contract": str, "speaker_notes_policy": str,
+    "source_format": str, "render_inspected": bool, "render_evidence": str, "private_notes_removed": bool,
+}
+AUDIO_GENERATION_FIELDS = (
+    "content_id", "source_content_hash", "source_projection_contract", "coverage_mode", "provider_profile",
+    "provider", "provider_route", "model", "voice", "instructions", "assembly_plan_hash", "codec", "container",
+    "rights_policy", "safety_policy",
+)
+AUDIO_COVERAGE_MODES = {"prose_only", "full_text"}
+PPTX_SPEAKER_NOTES_POLICIES = {"forbid", "reviewed_public"}
+AUDIO_TRIM_CHARS = "\\t\\n\\v\\f\\r "
 ROLE_MAP = {"cover": "explanatory_cover", "inline": "explanatory_inline", "gallery": "gallery_item"}
 MIME_BY_SUFFIX = {
     ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-    ".webp": "image/webp", ".pdf": "application/pdf",
+    ".webp": "image/webp", ".pdf": "application/pdf", ".mp3": "audio/mpeg",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 }
 PIL_FORMAT_BY_MIME = {"image/png": "PNG", "image/jpeg": "JPEG", "image/webp": "WEBP"}
 OPTIONAL_TYPES = {
@@ -60,7 +92,13 @@ OPTIONAL_TYPES = {
     "step_key": str, "title": str, "subtitle": str, "audience": list, "remote_fonts": bool,
     "page_count": int, "source_format": str, "render_inspected": bool, "render_evidence": str,
     "private_notes_removed": bool, "embedded_object_policy": str, "annotation_policy": str,
-    "filename_policy": str, "update_policy": str, "created_at": str,
+    "duration_ms": int, "codec": str, "container": str, "source_projection_contract": str,
+    "source_projection_path": str, "source_content_hash": str, "coverage_mode": str, "provider_profile": str,
+    "provider": str, "provider_route": str, "model": str, "voice": str, "instructions": str,
+    "assembly_plan_hash": str, "rights_policy": str, "safety_policy": str, "audio_generation_identity": str,
+    "disclosure": str, "production_date": str, "slide_count": int, "template_contract": str,
+    "speaker_notes_policy": str, "derived_pdf_manifest_path": str, "derived_pdf_asset_id": str,
+    "derived_pdf_sha256": str, "filename_policy": str, "update_policy": str, "created_at": str,
 }
 
 
@@ -209,6 +247,134 @@ def _validate_pdf_contract(data: dict[str, Any]) -> None:
         fail("PDF_ANNOTATION_POLICY_INVALID", data["annotation_policy"])
 
 
+def canonicalize_audio_instructions(value: str) -> str:
+    normalized = unicodedata.normalize("NFC", value)
+    return normalized.strip(AUDIO_TRIM_CHARS)
+
+
+def compute_audio_generation_identity(data: dict[str, Any]) -> str:
+    values = ["audio-generation-identity-v1"]
+    for key in AUDIO_GENERATION_FIELDS:
+        value = data[key]
+        values.append(unicodedata.normalize("NFC", value))
+    payload = json.dumps(values, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+
+def _validate_iso_date(value: str, code: str) -> None:
+    if not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", value):
+        fail(code, value)
+    try:
+        dt.date.fromisoformat(value)
+    except ValueError:
+        fail(code, value)
+
+
+def _validate_audio_contract(data: dict[str, Any]) -> None:
+    _validate_required_fields(data, AUDIO_REQUIRED)
+    if "instructions" not in data or not isinstance(data["instructions"], str):
+        fail("MISSING_FIELD", "instructions")
+    canonical_instructions = canonicalize_audio_instructions(data["instructions"])
+    if data["instructions"] != canonical_instructions:
+        fail("AUDIO_INSTRUCTIONS_NOT_CANONICAL", "instructions must equal audio-instructions-v1 output")
+    if data["duration_ms"] <= 0:
+        fail("AUDIO_DURATION_INVALID", str(data["duration_ms"]))
+    if data["codec"] != "mp3" or data["container"] != "mp3":
+        fail("AUDIO_ENVELOPE_INVALID", f"{data['codec']}/{data['container']}")
+    if data["source_projection_contract"] != "dosevai-narration-v1":
+        fail("AUDIO_SOURCE_PROJECTION_UNSUPPORTED", data["source_projection_contract"])
+    projection_path = safe_path(data["source_projection_path"])
+    if PurePosixPath(projection_path).parent != PurePosixPath(safe_path(data["source_path"])).parent:
+        fail("AUDIO_SOURCE_PROJECTION_NOT_ADJACENT", projection_path)
+    if not re.fullmatch(r"[0-9a-f]{64}", data["source_content_hash"]):
+        fail("AUDIO_SOURCE_HASH_INVALID", data["source_content_hash"])
+    if data["coverage_mode"] not in AUDIO_COVERAGE_MODES:
+        fail("AUDIO_COVERAGE_MODE_INVALID", data["coverage_mode"])
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", data["assembly_plan_hash"]):
+        fail("AUDIO_ASSEMBLY_PLAN_HASH_INVALID", data["assembly_plan_hash"])
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", data["audio_generation_identity"]):
+        fail("AUDIO_GENERATION_IDENTITY_INVALID", data["audio_generation_identity"])
+    expected_identity = compute_audio_generation_identity(data)
+    if data["audio_generation_identity"] != expected_identity:
+        fail("AUDIO_GENERATION_IDENTITY_MISMATCH", f"{data['audio_generation_identity']} != {expected_identity}")
+    _validate_iso_date(data["production_date"], "AUDIO_PRODUCTION_DATE_INVALID")
+
+
+def _validate_pptx_contract(data: dict[str, Any]) -> None:
+    _validate_required_fields(data, PPTX_REQUIRED)
+    if data["slide_count"] <= 0:
+        fail("PPTX_SLIDE_COUNT_INVALID", str(data["slide_count"]))
+    if not re.fullmatch(r"[a-z0-9]+(?:[._-][a-z0-9]+)*", data["source_format"]):
+        fail("PPTX_SOURCE_FORMAT_INVALID", data["source_format"])
+    if data["render_inspected"] is not True:
+        fail("PPTX_RENDER_INSPECTION_REQUIRED", "render_inspected must be true")
+    if data["private_notes_removed"] is not True:
+        fail("PPTX_PRIVATE_NOTES_REMOVAL_REQUIRED", "private_notes_removed must be true")
+    if data["speaker_notes_policy"] not in PPTX_SPEAKER_NOTES_POLICIES:
+        fail("PPTX_SPEAKER_NOTES_POLICY_INVALID", data["speaker_notes_policy"])
+    derived_keys = ("derived_pdf_manifest_path", "derived_pdf_asset_id", "derived_pdf_sha256")
+    present = [key in data for key in derived_keys]
+    if any(present) and not all(present):
+        fail("PPTX_DERIVED_PDF_FIELDS_INCOMPLETE", ", ".join(derived_keys))
+    if all(present):
+        safe_path(data["derived_pdf_manifest_path"])
+        if not data["derived_pdf_manifest_path"].endswith(".manifest.yaml"):
+            fail("PPTX_DERIVED_PDF_MANIFEST_INVALID", data["derived_pdf_manifest_path"])
+        if not data["derived_pdf_asset_id"].strip():
+            fail("PPTX_DERIVED_PDF_ASSET_ID_INVALID", data["derived_pdf_asset_id"])
+        if not re.fullmatch(r"[0-9a-f]{64}", data["derived_pdf_sha256"]):
+            fail("PPTX_DERIVED_PDF_SHA256_INVALID", data["derived_pdf_sha256"])
+
+
+def _legacy_audio_production_date(value: Any) -> str:
+    if not isinstance(value, str):
+        fail("AUDIO_LEGACY_GENERATED_AT_INVALID", repr(value))
+    if re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", value):
+        _validate_iso_date(value, "AUDIO_LEGACY_GENERATED_AT_INVALID")
+        return value
+    candidate = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        parsed = dt.datetime.fromisoformat(candidate)
+    except ValueError:
+        fail("AUDIO_LEGACY_GENERATED_AT_INVALID", value)
+    if parsed.tzinfo is None:
+        fail("AUDIO_LEGACY_GENERATED_AT_INVALID", value)
+    return parsed.astimezone(dt.timezone.utc).date().isoformat()
+
+
+def map_audio_legacy(legacy: dict[str, Any]) -> dict[str, Any]:
+    unknown = sorted(set(legacy) - AUDIO_LEGACY_KEYS)
+    if unknown:
+        fail("UNKNOWN_LEGACY_FIELDS", ", ".join(unknown))
+    for key in ("slug", "source_hash", "model", "voice", "format", "generated_at", "disclosure"):
+        if not isinstance(legacy.get(key), str) or not legacy[key].strip():
+            fail("AUDIO_LEGACY_REQUIRED_FIELD_MISSING", key)
+    if not re.fullmatch(r"[0-9a-f]{64}", legacy["source_hash"]):
+        fail("AUDIO_SOURCE_HASH_INVALID", legacy["source_hash"])
+    if legacy["format"] != "mp3":
+        fail("AUDIO_LEGACY_FORMAT_UNSUPPORTED", legacy["format"])
+    seconds = legacy.get("duration_seconds")
+    if isinstance(seconds, bool) or not isinstance(seconds, (int, float, str)):
+        fail("AUDIO_LEGACY_DURATION_INVALID", repr(seconds))
+    try:
+        millis = Decimal(str(seconds)) * Decimal(1000)
+    except InvalidOperation:
+        fail("AUDIO_LEGACY_DURATION_INVALID", repr(seconds))
+    if millis <= 0 or millis != millis.to_integral_value():
+        fail("AUDIO_LEGACY_DURATION_INVALID", repr(seconds))
+    return {
+        "content_id": legacy["slug"],
+        "source_content_hash": legacy["source_hash"],
+        "model": legacy["model"],
+        "voice": legacy["voice"],
+        "codec": "mp3",
+        "container": "mp3",
+        "duration_ms": int(millis),
+        "disclosure": legacy["disclosure"],
+        "production_date": _legacy_audio_production_date(legacy["generated_at"]),
+    }
+
+
 def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[str, Any]:
     unknown = sorted(set(data) - ALLOWED_KEYS)
     if unknown:
@@ -222,18 +388,33 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
         fail("UNSUPPORTED_SCHEMA_VERSION", str(data["schema_version"]))
     if data["profile"] not in SUPPORTED_PROFILES:
         fail("UNSUPPORTED_PROFILE", data["profile"])
+    audio_only = set(AUDIO_REQUIRED) | {"instructions"}
+    pptx_only = {"slide_count", "template_contract", "speaker_notes_policy", "derived_pdf_manifest_path", "derived_pdf_asset_id", "derived_pdf_sha256"}
+    pdf_only = {"page_count", "embedded_object_policy", "annotation_policy", "filename_policy", "update_policy"}
+    document_shared = {"source_format", "render_inspected", "render_evidence", "private_notes_removed"}
     if data["profile"] == "image":
-        pdf_only = (set(PDF_REQUIRED) - {"sha256"}) | {"filename_policy", "update_policy"}
-        if any(key in data for key in pdf_only):
-            fail("IMAGE_PDF_FIELDS_FORBIDDEN", ", ".join(sorted(pdf_only & set(data))))
+        forbidden = audio_only | pptx_only | pdf_only | document_shared
+        if any(key in data for key in forbidden):
+            fail("IMAGE_PROFILE_FIELDS_FORBIDDEN", ", ".join(sorted(forbidden & set(data))))
         if data.get("visual_id") != data["asset_id"]:
             fail("IDENTITY_MISMATCH", "visual_id must equal asset_id for image profile v1")
         if data.get("remote_fonts") is not False:
             fail("REMOTE_FONTS_FORBIDDEN", "remote_fonts must be false")
     elif data["profile"] == "document_pdf":
         _validate_pdf_contract(data)
-        if "visual_id" in data or "remote_fonts" in data:
-            fail("PDF_IMAGE_FIELDS_FORBIDDEN", "visual_id and remote_fonts are image-only")
+        forbidden = {"visual_id", "remote_fonts"} | audio_only | pptx_only
+        if any(key in data for key in forbidden):
+            fail("PDF_PROFILE_FIELDS_FORBIDDEN", ", ".join(sorted(forbidden & set(data))))
+    elif data["profile"] == "audio":
+        _validate_audio_contract(data)
+        forbidden = {"visual_id", "remote_fonts"} | pptx_only | pdf_only | document_shared
+        if any(key in data for key in forbidden):
+            fail("AUDIO_PROFILE_FIELDS_FORBIDDEN", ", ".join(sorted(forbidden & set(data))))
+    elif data["profile"] == "presentation_pptx":
+        _validate_pptx_contract(data)
+        forbidden = {"visual_id", "remote_fonts"} | audio_only | pdf_only
+        if any(key in data for key in forbidden):
+            fail("PPTX_PROFILE_FIELDS_FORBIDDEN", ", ".join(sorted(forbidden & set(data))))
     if "audience" in data and (not data["audience"] or not all(isinstance(item, str) and item.strip() for item in data["audience"])):
         fail("EMPTY_SEMANTIC_LIST", "audience")
     for key in ("claims", "boundaries"):
@@ -253,6 +434,10 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
         fail("UNSUPPORTED_IMAGE_FORMAT", suffix or "missing suffix")
     if data["profile"] == "document_pdf" and suffix != ".pdf":
         fail("UNSUPPORTED_PDF_FORMAT", suffix or "missing suffix")
+    if data["profile"] == "audio" and suffix != ".mp3":
+        fail("UNSUPPORTED_AUDIO_FORMAT", suffix or "missing suffix")
+    if data["profile"] == "presentation_pptx" and suffix != ".pptx":
+        fail("UNSUPPORTED_PPTX_FORMAT", suffix or "missing suffix")
     if data["mime_type"] != expected_mime:
         fail("MIME_PATH_MISMATCH", f"{data['mime_type']} != {expected_mime}")
     checksum = data.get("sha256")
@@ -273,7 +458,12 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
                     fail(exc.code, exc.message)
             else:
                 validate_raster_image(asset, data["mime_type"])
-        # document_pdf intentionally stops at envelope validation here.
+        elif data["profile"] == "audio":
+            try:
+                validate_mp3_audio(asset)
+            except AudioValidationError as exc:
+                fail(exc.code, exc.message)
+        # document_pdf and presentation_pptx intentionally stop at envelope validation here.
         # The owner/reviewer is responsible for document-content and structure review.
     return data
 
