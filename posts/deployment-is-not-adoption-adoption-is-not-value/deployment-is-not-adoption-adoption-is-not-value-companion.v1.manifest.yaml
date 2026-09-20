@@ -1,0 +1,43 @@
+schema_version: 1
+profile: document_pdf
+asset_id: deployment-is-not-adoption-adoption-is-not-value-companion-v1
+content_id: post:deployment-is-not-adoption-adoption-is-not-value
+source_class: project_owned
+project: personal-operating-system
+source_repository: dosev-ai/dosevai-public-assets
+source_path: posts/deployment-is-not-adoption-adoption-is-not-value/deployment-is-not-adoption-adoption-is-not-value-companion.v1.pdf
+mime_type: application/pdf
+sha256: 2e1d19aebad2bae3becc453b20e49075f265f9c5e0f5243aff281d45eeaae7bc
+role: document_companion
+title: Deployment Is Not Adoption. Adoption Is Not Value.
+subtitle: A four-page companion for separating deployment, adoption and attributable value before a scale decision.
+alt: A four-page Dosev AI companion showing deployment, adoption and value as separate evidence gates, a procurement-analytics trust field note, and scale, repair, hold or stop decisions.
+caption: Public four-page companion to the dosevai.com article on separating deployment, trusted adoption and attributable value.
+semantic_description: The document separates technical deployment, repeated trusted adoption, attributable value evidence, and the resulting portfolio decision to scale, repair, hold or stop.
+claims:
+- Deployment, adoption and value are distinct evidence gates for an AI-enabled workflow.
+- The companion summarizes the public article; the article remains canonical for the full prose, evidence boundaries and decision logic.
+boundaries:
+- Does not claim measured employer AI ROI, enterprise-wide adoption or guaranteed savings.
+- Contains no employer, supplier, client, private-system, credential or internal-governance identifiers.
+- Contains no speaker notes, internal review labels or owner-review status text.
+- The public PDF is a progressive-enhancement companion; the article remains understandable without it.
+audience:
+- CFOs, CPOs, CIOs and transformation leaders
+- Finance and Procurement data-product owners
+creation_method: Public-safe four-page derivative of the reviewed branded private presentation. The internal owner-review status line was removed in the native Slides source, then the exported PDF was re-rendered and visually inspected.
+contributor: Delyan Dosev
+license: CC0-1.0
+public_safe: true
+guide_eligible: false
+external_resources: false
+scripts: false
+page_count: 4
+source_format: governed-private-presentation
+render_inspected: true
+render_evidence: Google Slides PDF export rendered with PDFium at 160 DPI on 2026-09-20; all four pages visually inspected after the public-cleanup repair. PDF inspection found no encryption, forms, attachments or annotations.
+private_notes_removed: true
+embedded_object_policy: forbid
+annotation_policy: forbid
+filename_policy: immutable-versioned
+update_policy: publish-new-version
