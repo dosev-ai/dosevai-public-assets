@@ -79,7 +79,7 @@ AUDIO_GENERATION_FIELDS = (
 )
 AUDIO_COVERAGE_MODES = {"prose_only", "full_text"}
 PPTX_SPEAKER_NOTES_POLICIES = {"forbid", "reviewed_public"}
-AUDIO_TRIM_CHARS = "\\t\\n\\v\\f\\r "
+AUDIO_TRIM_CHARS = "".join(chr(code) for code in (0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x20))
 ROLE_MAP = {"cover": "explanatory_cover", "inline": "explanatory_inline", "gallery": "gallery_item"}
 MIME_BY_SUFFIX = {
     ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -272,8 +272,10 @@ def _validate_iso_date(value: str, code: str) -> None:
 
 def _validate_audio_contract(data: dict[str, Any]) -> None:
     _validate_required_fields(data, AUDIO_REQUIRED)
-    if "instructions" not in data or not isinstance(data["instructions"], str):
+    if "instructions" not in data:
         fail("MISSING_FIELD", "instructions")
+    if not isinstance(data["instructions"], str):
+        fail("INVALID_FIELD_TYPE", "instructions must be str")
     canonical_instructions = canonicalize_audio_instructions(data["instructions"])
     if data["instructions"] != canonical_instructions:
         fail("AUDIO_INSTRUCTIONS_NOT_CANONICAL", "instructions must equal audio-instructions-v1 output")
@@ -388,7 +390,7 @@ def validate_manifest(data: dict[str, Any], asset: Path | None = None) -> dict[s
         fail("UNSUPPORTED_SCHEMA_VERSION", str(data["schema_version"]))
     if data["profile"] not in SUPPORTED_PROFILES:
         fail("UNSUPPORTED_PROFILE", data["profile"])
-    audio_only = set(AUDIO_REQUIRED) | {"instructions"}
+    audio_only = (set(AUDIO_REQUIRED) - {"sha256"}) | {"instructions"}
     pptx_only = {"slide_count", "template_contract", "speaker_notes_policy", "derived_pdf_manifest_path", "derived_pdf_asset_id", "derived_pdf_sha256"}
     pdf_only = {"page_count", "embedded_object_policy", "annotation_policy", "filename_policy", "update_policy"}
     document_shared = {"source_format", "render_inspected", "render_evidence", "private_notes_removed"}
