@@ -349,7 +349,28 @@ def _legacy_audio_production_date(value: Any) -> str:
     return parsed.astimezone(dt.timezone.utc).date().isoformat()
 
 
-def map_audio_legacy(legacy: dict[str, Any]) -> dict[str, Any]:
+def map_audio_legacy(
+    legacy: dict[str, Any],
+    *,
+    source_path: str,
+    mime_type: str,
+    asset: Path,
+) -> dict[str, Any]:
+    """Map deterministic legacy fields after proving the legacy MP3 envelope.
+
+    The returned mapping is intentionally incomplete: provenance, licence, provider profile,
+    source-projection sidecar, coverage, instructions, assembly plan, and policy authority
+    still require explicit governed inputs before a full audio manifest can be generated.
+    """
+    normalized_source_path = safe_path(source_path)
+    if PurePosixPath(normalized_source_path).suffix.lower() != ".mp3" or mime_type != "audio/mpeg":
+        fail("AUDIO_LEGACY_ENVELOPE_INVALID", f"{normalized_source_path} / {mime_type}")
+    if asset.name != PurePosixPath(normalized_source_path).name:
+        fail("ASSET_FILENAME_MISMATCH", f"{asset.name} != {PurePosixPath(normalized_source_path).name}")
+    try:
+        validate_mp3_audio(asset)
+    except AudioValidationError as exc:
+        fail(exc.code, exc.message)
     unknown = sorted(set(legacy) - AUDIO_LEGACY_KEYS)
     if unknown:
         fail("UNKNOWN_LEGACY_FIELDS", ", ".join(unknown))
@@ -371,6 +392,9 @@ def map_audio_legacy(legacy: dict[str, Any]) -> dict[str, Any]:
         fail("AUDIO_LEGACY_DURATION_INVALID", repr(seconds))
     return {
         "content_id": legacy["slug"],
+        "source_path": normalized_source_path,
+        "mime_type": mime_type,
+        "sha256": sha256(asset),
         "source_content_hash": legacy["source_hash"],
         "model": legacy["model"],
         "voice": legacy["voice"],
