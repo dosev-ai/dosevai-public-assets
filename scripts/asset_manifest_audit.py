@@ -156,6 +156,7 @@ def _validate_audio_source_binding(root: Path, manifest: dict[str, Any]) -> None
 
 def _validate_pptx_derived_pdf(
     root: Path,
+    scan_roots: list[Path],
     manifest: dict[str, Any],
     expected_repository: str | None,
 ) -> None:
@@ -163,6 +164,8 @@ def _validate_pptx_derived_pdf(
     if reference is None:
         return
     pdf_manifest_path = _repository_file(root, reference, "PPTX_DERIVED_PDF_MANIFEST_INVALID")
+    if not any(pdf_manifest_path == scan_root or scan_root in pdf_manifest_path.parents for scan_root in scan_roots):
+        raise ManifestError("PPTX_DERIVED_PDF_OUTSIDE_AUDIT", reference)
     pdf_manifest = load_mapping(pdf_manifest_path)
     if pdf_manifest.get("profile") != "document_pdf":
         raise ManifestError("PPTX_DERIVED_PDF_PROFILE_INVALID", str(pdf_manifest.get("profile")))
@@ -301,7 +304,7 @@ def audit_repository(
             if validated["profile"] == "audio":
                 _validate_audio_source_binding(root, validated)
             elif validated["profile"] == "presentation_pptx":
-                _validate_pptx_derived_pdf(root, validated, expected_repository)
+                _validate_pptx_derived_pdf(root, scan_roots, validated, expected_repository)
         except ManifestError as exc:
             items.append(
                 _item(
