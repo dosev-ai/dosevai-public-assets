@@ -239,13 +239,13 @@ class AudioPptxManifestTests(unittest.TestCase):
         audio_item = next(item for item in report["items"] if item.get("profile") == "audio")
         self.assertEqual(audio_item["code"], "AUDIO_SOURCE_HASH_MISMATCH")
 
-        sidecar.write_text("changed\n", encoding="utf-8")
+        sidecar.write_text("first\nsecond", encoding="utf-8")
         data["source_content_hash"] = hashlib.sha256(sidecar.read_bytes()).hexdigest()
         data["audio_generation_identity"] = compute_audio_generation_identity(data)
         (package / "narration.manifest.yaml").write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
         report = audit_repository(root)
         audio_item = next(item for item in report["items"] if item.get("profile") == "audio")
-        self.assertEqual(audio_item["code"], "AUDIO_SOURCE_PROJECTION_TRAILING_NEWLINE")
+        self.assertEqual(audio_item["code"], "AUDIO_SOURCE_PROJECTION_NEWLINE_FORBIDDEN")
 
     def test_pptx_is_owner_attested_envelope_only(self) -> None:
         _, root = self.workspace()
