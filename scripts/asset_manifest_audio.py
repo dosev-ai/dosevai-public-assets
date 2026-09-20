@@ -3,9 +3,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import soundfile as sf
-
-
 class AudioValidationError(ValueError):
     def __init__(self, code: str, message: str):
         super().__init__(message)
@@ -15,6 +12,10 @@ class AudioValidationError(ValueError):
 
 def validate_mp3_audio(path: Path) -> None:
     """Decode the complete MP3 stream without deriving semantic metadata."""
+    try:
+        import soundfile as sf
+    except ImportError as exc:
+        raise AudioValidationError("AUDIO_DECODER_UNAVAILABLE", "soundfile is required for audio validation") from exc
     try:
         info = sf.info(str(path))
         if info.format != "MP3" or info.subtype != "MPEG_LAYER_III":
